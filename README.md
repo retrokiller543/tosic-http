@@ -1,0 +1,1 @@
+This crate is heavily inspired by [actix-web](https://github.com/actix/actix-web) and mainly to learn more rust and generics
