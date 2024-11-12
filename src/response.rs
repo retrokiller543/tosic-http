@@ -1,9 +1,10 @@
 use crate::body::BoxBody;
-use crate::error::Error;
+use crate::request::HttpRequest;
+use crate::traits::responder::Responder;
 use http::StatusCode;
 use std::fmt::Debug;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct HttpResponse<Body = BoxBody> {
     pub(crate) body: Body,
     pub(crate) status_code: StatusCode,
@@ -38,5 +39,29 @@ impl HttpResponse<BoxBody> {
 
     pub fn set_body(self, body: BoxBody) -> Self {
         Self { body, ..self }
+    }
+}
+
+impl Responder for HttpResponse<BoxBody> {
+    type Body = BoxBody;
+
+    fn respond_to(self, _req: &HttpRequest) -> HttpResponse<Self::Body> {
+        self
+    }
+}
+
+impl Responder for String {
+    type Body = BoxBody;
+
+    fn respond_to(self, _req: &HttpRequest) -> HttpResponse<Self::Body> {
+        HttpResponse::new(200).set_body(BoxBody::new(self))
+    }
+}
+
+impl Responder for &'static str {
+    type Body = BoxBody;
+
+    fn respond_to(self, _req: &HttpRequest) -> HttpResponse<Self::Body> {
+        HttpResponse::new(200).set_body(BoxBody::new(self))
     }
 }

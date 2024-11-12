@@ -7,6 +7,7 @@ use std::fmt;
 use std::fmt::Debug;
 use thiserror::Error;
 
+mod foreign_impls;
 pub mod macros;
 pub mod response_error;
 

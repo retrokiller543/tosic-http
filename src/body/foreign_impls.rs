@@ -3,7 +3,7 @@ use crate::body::size::BodySize;
 use bytes::{Bytes, BytesMut};
 use std::borrow::Cow;
 use std::convert::Infallible;
-use std::fmt::{Debug, Formatter};
+use std::fmt::Debug;
 use std::mem;
 use std::ops::DerefMut;
 use std::pin::Pin;

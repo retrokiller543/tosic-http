@@ -25,7 +25,7 @@ enum BoxBodyInner {
 impl Clone for BoxBodyInner {
     fn clone(&self) -> Self {
         match self {
-            BoxBodyInner::None(none) => BoxBodyInner::None(none.clone()),
+            BoxBodyInner::None(none) => BoxBodyInner::None(*none),
             BoxBodyInner::Bytes(b) => BoxBodyInner::Bytes(b.clone()),
             BoxBodyInner::Stream(_) => BoxBodyInner::None(none::None::new()),
         }

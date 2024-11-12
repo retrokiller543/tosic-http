@@ -1,6 +1,6 @@
 use std::future::Future;
 
-pub trait Handler<Args> {
+pub trait Handler<Args>: 'static {
     type Output;
     type Future: Future<Output = Self::Output>;
 

@@ -5,7 +5,7 @@ use std::task::{Context, Poll};
 #[derive(Debug, Clone)]
 #[must_use = "futures do nothing unless you `.await` or poll them"]
 pub struct Ready<T> {
-    val: Option<T>,
+    pub(crate) val: Option<T>,
 }
 
 impl<T> Ready<T> {

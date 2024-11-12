@@ -1,0 +1,2 @@
+
+//impl ResponseError for Infallible {}
