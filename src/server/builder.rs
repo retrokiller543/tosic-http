@@ -1,8 +1,3 @@
-use std::future::Future;
-use std::net::ToSocketAddrs as StdToSocketAddrs;
-use http::Method;
-use tokio::io;
-use tokio::net::ToSocketAddrs;
 use crate::body::BoxBody;
 use crate::error::Error;
 use crate::handlers::Handlers;
@@ -11,11 +6,15 @@ use crate::services::HttpService;
 use crate::traits::from_request::FromRequest;
 use crate::traits::handler::Handler;
 use crate::traits::responder::Responder;
+use http::Method;
+use std::future::Future;
+use tokio::io;
+use tokio::net::ToSocketAddrs;
 
 #[derive(Default, Debug, Clone)]
 pub struct HttpServerBuilder<T: ToSocketAddrs + Default + Clone> {
     addr: Option<T>,
-    handlers: Handlers
+    handlers: Handlers,
 }
 
 impl<T: ToSocketAddrs + Default + Clone> HttpServerBuilder<T> {
@@ -31,7 +30,7 @@ impl<T: ToSocketAddrs + Default + Clone> HttpServerBuilder<T> {
         Args: FromRequest + Send + 'static,
         Args::Future: Future + Send + 'static,
         H::Future: Future + Send + 'static,
-        H::Output: Responder<Body= BoxBody> + 'static,
+        H::Output: Responder<Body = BoxBody> + 'static,
         Error: From<Args::Error>,
     {
         self.handlers.insert(method, path, handler);
@@ -44,7 +43,7 @@ impl<T: ToSocketAddrs + Default + Clone> HttpServerBuilder<T> {
         Args: FromRequest + Send + 'static,
         Args::Future: Future + Send + 'static,
         H::Future: Future + Send + 'static,
-        H::Output: Responder<Body= BoxBody> + 'static,
+        H::Output: Responder<Body = BoxBody> + 'static,
         Error: From<Args::Error>,
     {
         self.handlers.insert(H::METHOD, H::PATH, handler);
@@ -62,5 +61,3 @@ impl<T: ToSocketAddrs + Default + Clone> HttpServerBuilder<T> {
         HttpServer::new(addr, self.handlers).await
     }
 }
-
-

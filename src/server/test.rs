@@ -1,13 +1,13 @@
 #![cfg(test)]
 
-use std::future::Future;
-use http::Method;
 use crate::body::BoxBody;
 use crate::request::HttpRequest;
 use crate::server::builder::HttpServerBuilder;
 use crate::services::HttpService;
 use crate::traits::handler::Handler;
 use crate::traits::responder::Responder;
+use http::Method;
+use std::future::Future;
 
 async fn test_handler(req: HttpRequest) -> impl Responder<Body = BoxBody> {
     "test response"
@@ -34,7 +34,12 @@ impl HttpService<(HttpRequest,)> for TestStructHandler {
 
 #[tokio::test]
 async fn test() {
-    let server = HttpServerBuilder::default().service_method(Method::GET, "", test_handler).service(TestStructHandler).addr("0.0.0.0:0").build().await;
+    let server = HttpServerBuilder::default()
+        .service_method(Method::GET, "", test_handler)
+        .service(TestStructHandler)
+        .addr("0.0.0.0:0")
+        .build()
+        .await;
 
     assert!(server.is_ok());
 

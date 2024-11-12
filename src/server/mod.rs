@@ -1,14 +1,14 @@
 use crate::error::ServerError;
+use crate::handlers::Handlers;
 use tokio::io;
 use tokio::net::ToSocketAddrs;
 use tracing::{error, info, trace};
-use crate::handlers::Handlers;
 
 pub mod builder;
 mod test;
 pub struct HttpServer {
     listener: tokio::net::TcpListener,
-    handlers: Handlers
+    handlers: Handlers,
 }
 
 impl HttpServer {

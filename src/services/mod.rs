@@ -1,10 +1,5 @@
-use std::future::Future;
-use http::Method;
-use crate::body::BoxBody;
-use crate::error::Error;
-use crate::traits::from_request::FromRequest;
 use crate::traits::handler::Handler;
-use crate::traits::responder::Responder;
+use http::Method;
 
 pub trait HttpService<Args>: Handler<Args> {
     const METHOD: Method = Method::GET;
