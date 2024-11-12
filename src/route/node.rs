@@ -70,6 +70,12 @@ impl Debug for RouteNode {
     }
 }
 
+impl Default for RouteNode {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RouteNode {
     pub fn new() -> Self {
         RouteNode {
@@ -106,7 +112,7 @@ impl RouteNode {
                 let child = self
                     .static_children
                     .entry(segment.clone())
-                    .or_insert_with(RouteNode::new);
+                    .or_default();
                 child.insert_segments(&segments[1..], handler);
             }
             PathSegment::Parameter(param_name) => {

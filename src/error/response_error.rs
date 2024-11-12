@@ -36,10 +36,8 @@ downcast_dyn!(ResponseError);
 impl ResponseError for ServerError {
     fn status_code(&self) -> StatusCode {
         match self {
-            ServerError::Io(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            ServerError::Error(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            ServerError::Http(_) => StatusCode::INTERNAL_SERVER_ERROR,
             ServerError::ExtractionError(err) => err.status_code(),
+            _ => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }

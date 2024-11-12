@@ -32,7 +32,7 @@ impl Handlers {
         H::Output: Responder<Body = BoxBody> + 'static,
         Error: From<Args::Error>,
     {
-        let entry = self.entry(method).or_insert_with(RouteNode::new);
+        let entry = self.entry(method).or_default();
         let route = crate::route::Route::new(path);
         entry.insert(&route, handler);
     }

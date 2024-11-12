@@ -1,6 +1,8 @@
 mod test;
 
+use crate::body::message_body::MessageBody;
 use crate::body::BoxBody;
+use crate::error::ServerError;
 use crate::futures::{ok, Ready};
 use crate::traits::from_request::FromRequest;
 use bytes::Bytes;
@@ -9,6 +11,7 @@ use httparse::{Request, Status};
 use std::collections::HashMap;
 use std::convert::Infallible;
 use std::ops::{Deref, DerefMut};
+use std::str::FromStr;
 
 #[derive(Clone, Debug)]
 pub struct HttpRequest {
@@ -61,49 +64,32 @@ impl HttpRequest {
             headers,
             version,
             params: None,
-            //payload: HttpPayload::new(BoxBody::new(())),
         }
     }
 
-    pub(crate) fn from_bytes(
-        buffer: &'static [u8],
-    ) -> Result<(Self, HttpPayload), Box<dyn std::error::Error>> {
+    pub(crate) fn from_bytes(buffer: &[u8]) -> Result<(Self, HttpPayload), ServerError> {
         let mut headers = [httparse::EMPTY_HEADER; 32];
-        let mut req = Request::new(&mut headers);
+        let mut req = httparse::Request::new(&mut headers);
 
-        match req.parse(buffer)? {
-            Status::Complete(_len) => {
-                let method = req.method.ok_or("No method")?.parse::<Method>()?;
-                let uri = req.path.ok_or("No URI")?.parse::<Uri>()?;
-                let version = match req.version.ok_or("No version")? {
-                    0 => Version::HTTP_10,
-                    1 => Version::HTTP_11,
-                    _ => Version::HTTP_11,
-                };
+        match req.parse(buffer) {
+            Ok(Status::Complete(_)) => {
+                let parsed_req: Self = req.into();
 
-                let mut header_map = HeaderMap::new();
-                for header in req.headers.iter() {
-                    let name = header.name;
-                    let value = HeaderValue::from_bytes(header.value)?;
-                    header_map.insert(name, value);
-                }
-
-                let parsed_req = HttpRequest::new(method, uri, header_map, version);
-
-                // Find the end of the headers, and copy the payload part.
+                // Extract body
                 let headers_end = buffer
                     .windows(4)
                     .position(|window| window == b"\r\n\r\n")
                     .map(|pos| pos + 4)
                     .unwrap_or(buffer.len());
+                let body = buffer[headers_end..].to_vec();
 
-                // Here, we clone the data to ensure the payload is self-contained and owns the data.
-                let payload_data = buffer[headers_end..].to_vec();
-                let payload = HttpPayload::from_bytes(payload_data.into());
-
-                Ok((parsed_req, payload))
+                Ok((
+                    parsed_req,
+                    HttpPayload::from_bytes(body.try_into_bytes().unwrap()),
+                ))
             }
-            Status::Partial => Err("Incomplete HTTP request".into()),
+            Ok(Status::Partial) => Err(ServerError::PartialParsed),
+            Err(e) => Err(ServerError::ParseError(e)),
         }
     }
 }
@@ -114,5 +100,36 @@ impl FromRequest for HttpRequest {
 
     fn from_request(req: &HttpRequest, _: &mut HttpPayload) -> Self::Future {
         ok(req.clone())
+    }
+}
+
+impl From<httparse::Request<'_, '_>> for HttpRequest {
+    fn from(value: Request) -> Self {
+        let version = match value.version.unwrap_or(0) {
+            0 => Version::HTTP_10,
+            1 => Version::HTTP_11,
+            _ => Version::HTTP_11,
+        };
+        let method: Method = value.method.unwrap_or("GET").parse().unwrap_or_default();
+        let uri = Uri::from_str(value.path.unwrap_or_default()).unwrap_or_default();
+        let mut headers = HeaderMap::new();
+
+        for header in value.headers {
+            // Parse header name into an owned HeaderName
+            let header_name = header.name.parse::<http::header::HeaderName>().unwrap();
+
+            // Create HeaderValue from bytes (this clones the data)
+            let header_value = HeaderValue::from_bytes(header.value).unwrap();
+
+            headers.append(header_name, header_value);
+        }
+
+        Self {
+            method,
+            uri,
+            headers,
+            version,
+            params: None,
+        }
     }
 }

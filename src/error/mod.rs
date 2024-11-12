@@ -21,6 +21,26 @@ pub enum ServerError {
     Http(#[from] http::Error),
     #[error(transparent)]
     ExtractionError(#[from] crate::extractors::ExtractionError),
+    #[error(transparent)]
+    ParseError(#[from] httparse::Error),
+    #[error(transparent)]
+    InvalidHeaderValue(#[from] http::header::InvalidHeaderValue),
+    #[error(transparent)]
+    InvalidUri(#[from] http::uri::InvalidUri),
+    #[error(transparent)]
+    InvalidMethod(#[from] http::method::InvalidMethod),
+    #[error("Uri Empty")]
+    UriEmpty,
+    #[error("Method not Provided")]
+    MethodEmpty,
+    #[error("Version is not provided")]
+    VersionEmpty,
+    #[error("Connection was closed")]
+    ConnectionClosed,
+    #[error("Partially parsed the request")]
+    PartialParsed,
+    #[error("Invalid encoding for request")]
+    InvalidEncoding,
 }
 
 pub struct Error {

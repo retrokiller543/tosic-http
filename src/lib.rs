@@ -5,15 +5,15 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
 
-mod body;
-mod error;
-mod extractors;
-mod futures;
-mod handlers;
-mod request;
-mod response;
-mod route;
-mod server;
-mod services;
-mod traits;
-mod utils;
+pub mod body;
+pub mod error;
+pub mod extractors;
+pub mod futures;
+pub mod handlers;
+pub mod request;
+pub mod response;
+pub mod route;
+pub mod server;
+pub mod services;
+pub mod traits;
+pub mod utils;
