@@ -4,9 +4,11 @@ use crate::response::HttpResponse;
 use bytes::BytesMut;
 use http::StatusCode;
 
+use crate::error::ServerError;
+use crate::extractors::ExtractionError;
 use std::io::Write;
 
-pub trait ResponseError: std::fmt::Debug + std::fmt::Display {
+pub trait ResponseError: std::fmt::Debug + std::fmt::Display + Send {
     fn status_code(&self) -> StatusCode {
         StatusCode::INTERNAL_SERVER_ERROR
     }
@@ -30,3 +32,20 @@ pub trait ResponseError: std::fmt::Debug + std::fmt::Display {
 }
 
 downcast_dyn!(ResponseError);
+
+impl ResponseError for ServerError {
+    fn status_code(&self) -> StatusCode {
+        match self {
+            ServerError::Io(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            ServerError::Error(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            ServerError::Http(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            ServerError::ExtractionError(err) => err.status_code(),
+        }
+    }
+}
+
+impl ResponseError for ExtractionError {
+    fn status_code(&self) -> StatusCode {
+        StatusCode::BAD_REQUEST
+    }
+}

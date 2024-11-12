@@ -19,6 +19,8 @@ pub enum ServerError {
     Error(#[from] Error),
     #[error(transparent)]
     Http(#[from] http::Error),
+    #[error(transparent)]
+    ExtractionError(#[from] crate::extractors::ExtractionError),
 }
 
 pub struct Error {

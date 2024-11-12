@@ -1,6 +1,6 @@
 use crate::body::BoxBody;
 use crate::error::Error;
-use crate::request::HttpRequest;
+use crate::request::{HttpPayload, HttpRequest};
 use crate::response::HttpResponse;
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -14,9 +14,15 @@ use crate::traits::from_request::FromRequest;
 use crate::traits::handler::Handler;
 use crate::traits::responder::Responder;
 
-pub(crate) type HandlerFn = dyn Fn(HttpRequest) -> Pin<Box<dyn Future<Output = Result<HttpResponse, Error>> + Send>>
+pub(crate) type HandlerFn = dyn Fn(
+        HttpRequest,
+        &mut HttpPayload,
+    ) -> Pin<Box<dyn Future<Output = Result<HttpResponse, Error>> + Send>>
     + Send
     + Sync;
+
+unsafe impl Send for HttpPayload {}
+unsafe impl Send for BoxBody {}
 
 pub(crate) fn wrap_handler_fn<H, Args>(handler: Arc<H>) -> Arc<HandlerFn>
 where
@@ -27,19 +33,25 @@ where
     H::Output: Responder<Body = BoxBody> + 'static,
     Error: From<Args::Error>,
 {
-    Arc::new(move |req: HttpRequest| -> Pin<Box<dyn Future<Output = Result<HttpResponse, Error>> + Send>> {
-        let handler = handler.clone();
-        let req = req;
+    Arc::new(
+        move |req: HttpRequest,
+              payload: &mut HttpPayload|
+              -> Pin<Box<dyn Future<Output = Result<HttpResponse, Error>> + Send>> {
+            let handler = handler.clone();
+            let req = req;
 
-        Box::pin(async move {
-            // Extract arguments from the request
-            let args = Args::from_request(&req).await?;
-            // Call the handler with the extracted arguments
-            let res = handler.call(args).await;
-            // Convert the handler's output into a response
-            Ok(res.respond_to(&req))
-        })
-    }) as Arc<HandlerFn>
+            let mut payload = payload.clone();
+
+            Box::pin(async move {
+                // Extract arguments from the request
+                let args = Args::from_request(&req, &mut payload).await?;
+                // Call the handler with the extracted arguments
+                let res = handler.call(args).await;
+                // Convert the handler's output into a response
+                Ok(res.respond_to(&req))
+            })
+        },
+    ) as Arc<HandlerFn>
 }
 
 #[derive(Clone)]

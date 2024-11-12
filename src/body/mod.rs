@@ -14,6 +14,7 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 
 #[derive(Debug, Clone)]
+/// Cloning this struct will clone the inner body but if it's a stream it will not be cloned and instead a new empty body will be created
 pub struct BoxBody(BoxBodyInner);
 
 enum BoxBodyInner {

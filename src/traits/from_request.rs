@@ -1,8 +1,11 @@
 #![allow(non_snake_case)]
 
+use crate::body::message_body::MessageBody;
+use crate::body::BoxBody;
 use crate::error::Error;
 use crate::futures::{ok, Ready};
-use crate::request::HttpRequest;
+use crate::request::{HttpPayload, HttpRequest};
+use bytes::Bytes;
 use pin_project_lite::pin_project;
 use std::convert::Infallible;
 use std::{
@@ -17,7 +20,11 @@ pub trait FromRequest: Sized {
     type Future: Future<Output = Result<Self, Self::Error>>;
 
     /// Extracts a value of type `Self` from the request. The request contains the request body at the moment but that might change in the future
-    fn from_request(req: &HttpRequest) -> Self::Future;
+    fn from_request(req: &HttpRequest, payload: &mut HttpPayload) -> Self::Future;
+
+    fn extract(req: &HttpRequest) -> Self::Future {
+        Self::from_request(req, &mut HttpPayload::default())
+    }
 }
 
 pin_project! {
@@ -59,11 +66,11 @@ macro_rules! impl_tuple_from_request {
                 type Error = Error;
                 type Future = $fut<$($T),+>;
 
-                fn from_request(req: &HttpRequest) -> Self::Future {
+                fn from_request(req: &HttpRequest, payload: &mut HttpPayload) -> Self::Future {
                     $fut {
                         $(
                             $T: ExtractFuture::Future {
-                                fut: $T::from_request(req)
+                                fut: $T::from_request(req, payload),
                             },
                         )+
                     }
@@ -149,7 +156,19 @@ impl FromRequest for () {
     type Error = Infallible;
     type Future = Ready<Result<Self, Self::Error>>;
 
-    fn from_request(_: &HttpRequest) -> Self::Future {
+    fn from_request(_: &HttpRequest, _: &mut HttpPayload) -> Self::Future {
         ok(())
+    }
+}
+
+impl FromRequest for Bytes {
+    type Error = Infallible;
+    type Future = Ready<Result<Self, Self::Error>>;
+
+    fn from_request(_: &HttpRequest, payload: &mut HttpPayload) -> Self::Future {
+        ok(<BoxBody as Clone>::clone(payload)
+            .boxed()
+            .try_into_bytes()
+            .expect("Unable to read body"))
     }
 }
