@@ -14,7 +14,6 @@ fn test_http_request_new() {
     assert_eq!(request.uri, uri);
     assert_eq!(request.headers, headers);
     assert_eq!(request.version, version);
-    assert!(request.params.is_none());
 }
 
 #[test]

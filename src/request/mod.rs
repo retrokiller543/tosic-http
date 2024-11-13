@@ -12,8 +12,6 @@ use std::collections::HashMap;
 use std::convert::Infallible;
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
-use serde::de::DeserializeOwned;
-use crate::extractors::query::Query;
 
 #[derive(Clone, Debug)]
 pub struct HttpRequest {
@@ -125,8 +123,6 @@ impl HttpRequest {
     pub fn params_mut(&mut self) -> &mut HashMap<String, String> {
         &mut self.params
     }
-
-
 }
 
 impl FromRequest for HttpRequest {

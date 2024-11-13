@@ -1,14 +1,14 @@
-use std::sync::Arc;
 use crate::error::{Error, ServerError};
 use crate::handlers::Handlers;
 use crate::request::{HttpPayload, HttpRequest};
-use tokio::io;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::io::BufReader;
-use tokio::net::ToSocketAddrs;
-use tracing::{debug, error, info, trace};
 use crate::response::HttpResponse;
 use crate::route::HandlerFn;
+use std::sync::Arc;
+use tokio::io;
+use tokio::io::BufReader;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::ToSocketAddrs;
+use tracing::{debug, error, info, trace};
 
 pub mod builder;
 mod test;
@@ -19,7 +19,10 @@ pub struct HttpServer {
 
 impl HttpServer {
     #[tracing::instrument(level = "trace", skip(handlers))]
-    pub(crate) async fn new<T: ToSocketAddrs + std::fmt::Debug>(addr: T, handlers: Handlers) -> io::Result<Self> {
+    pub(crate) async fn new<T: ToSocketAddrs + std::fmt::Debug>(
+        addr: T,
+        handlers: Handlers,
+    ) -> io::Result<Self> {
         let listener = tokio::net::TcpListener::bind(addr).await?;
 
         trace!("Server Bound to {}", listener.local_addr()?);
@@ -75,10 +78,12 @@ impl HttpServer {
 
         request.params_mut().extend(handler.1.clone());
 
-        let response = Self::process_request(handler.0, request, payload).await.unwrap_or_else(|e| {
-            error!("Failed to process request: {}", e);
-            e.error_response()
-        });
+        let response = Self::process_request(handler.0, request, payload)
+            .await
+            .unwrap_or_else(|e| {
+                error!("Failed to process request: {}", e);
+                e.error_response()
+            });
 
         //let bytes = response.to_bytes()?;
 
@@ -100,7 +105,11 @@ impl HttpServer {
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
-    async fn process_request(handler: Arc<HandlerFn>, request: HttpRequest, mut payload: HttpPayload) -> Result<HttpResponse, Error> {
+    async fn process_request(
+        handler: Arc<HandlerFn>,
+        request: HttpRequest,
+        mut payload: HttpPayload,
+    ) -> Result<HttpResponse, Error> {
         let preprocessed_request = Self::pre_process_request(&request).await?;
         let response: HttpResponse = handler.call((preprocessed_request, &mut payload)).await?;
         let post_processed_response = Self::post_process_request(response).await?;

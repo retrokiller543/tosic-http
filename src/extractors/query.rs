@@ -1,9 +1,9 @@
-use std::fmt::Debug;
-use serde::de::DeserializeOwned;
 use crate::extractors::ExtractionError;
 use crate::futures::{err, ok, Ready};
 use crate::request::{HttpPayload, HttpRequest};
 use crate::traits::from_request::FromRequest;
+use serde::de::DeserializeOwned;
+use std::fmt::Debug;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Query<V>(pub V);

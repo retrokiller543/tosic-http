@@ -2,12 +2,12 @@ use http::Method;
 use serde::Deserialize;
 use thiserror::Error;
 use tokio::io;
-use tracing::dispatcher::SetGlobalDefaultError;
 use tosic_http::body::BoxBody;
 use tosic_http::extractors::json::Json;
 use tosic_http::extractors::query::Query;
 use tosic_http::server::builder::HttpServerBuilder;
 use tosic_http::traits::responder::Responder;
+use tracing::dispatcher::SetGlobalDefaultError;
 
 #[derive(Debug, Error)]
 enum HttpServerError {

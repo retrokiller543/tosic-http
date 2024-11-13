@@ -109,10 +109,7 @@ impl RouteNode {
 
         match &segments[0] {
             PathSegment::Static(segment) => {
-                let child = self
-                    .static_children
-                    .entry(segment.clone())
-                    .or_default();
+                let child = self.static_children.entry(segment.clone()).or_default();
                 child.insert_segments(&segments[1..], handler);
             }
             PathSegment::Parameter(param_name) => {

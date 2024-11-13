@@ -1,4 +1,3 @@
-use std::fmt::Debug;
 use crate::body::BoxBody;
 use crate::error::Error;
 use crate::handlers::Handlers;
@@ -8,6 +7,7 @@ use crate::traits::from_request::FromRequest;
 use crate::traits::handler::Handler;
 use crate::traits::responder::Responder;
 use http::Method;
+use std::fmt::Debug;
 use std::future::Future;
 use tokio::io;
 use tokio::net::ToSocketAddrs;

@@ -2,7 +2,10 @@ use crate::route::HandlerFn;
 use std::collections::HashMap;
 use std::sync::Arc;
 
-pub struct HandlerWrapper(pub(crate) Arc<HandlerFn>, pub(crate) HashMap<String, String>);
+pub struct HandlerWrapper(
+    pub(crate) Arc<HandlerFn>,
+    pub(crate) HashMap<String, String>,
+);
 
 impl HandlerWrapper {
     pub fn handler(&self) -> Arc<HandlerFn> {

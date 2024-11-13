@@ -1,11 +1,11 @@
+use crate::body::message_body::MessageBody;
 use crate::body::BoxBody;
 use crate::request::HttpRequest;
 use crate::traits::responder::Responder;
 use http::StatusCode;
 use std::fmt::Debug;
-use tokio::io;
 use std::io::Write;
-use crate::body::message_body::MessageBody;
+use tokio::io;
 
 #[derive(Clone, Debug)]
 pub struct HttpResponse<Body = BoxBody> {
