@@ -1,6 +1,6 @@
 [package]
 name = "tosic-http-macro"
-version = "0.0.0"
+version = "0.0.1"
 authors = ["Emil Schütt <emil.schutt@gmail.com>"]
 description = "Proc Macros for generating endpoints when using the `tosic-http` crate"
 keywords = ["proc_macro", "procmacro"]
