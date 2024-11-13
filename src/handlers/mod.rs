@@ -10,7 +10,7 @@ use crate::traits::from_request::FromRequest;
 use crate::traits::handler::Handler;
 use crate::traits::responder::Responder;
 use http::Method;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::future::Future;
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
@@ -48,10 +48,10 @@ impl Handlers {
             if let Some(handler) = handler {
                 handler.into()
             } else {
-                (Self::not_found_handler(), HashMap::new()).into()
+                (Self::not_found_handler(), BTreeMap::new()).into()
             }
         } else {
-            (Self::not_found_handler(), HashMap::new()).into()
+            (Self::not_found_handler(), BTreeMap::new()).into()
         }
     }
 

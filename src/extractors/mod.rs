@@ -25,7 +25,7 @@ pub enum ExtractionError {
     #[error("Expected there to be param but there was none")]
     MissingPathField,
     #[error("Invalid length of data when extracting")]
-    InvalidLength
+    InvalidLength,
 }
 
 impl<E> FromRequest for Option<E>

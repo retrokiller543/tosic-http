@@ -3,7 +3,7 @@ use crate::error::Error;
 use crate::request::{HttpPayload, HttpRequest};
 use crate::response::HttpResponse;
 use std::borrow::Cow;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::fmt::Debug;
 use std::future::Future;
 use std::pin::Pin;
@@ -151,19 +151,19 @@ impl RouteNode {
         }
     }
 
-    pub fn match_path(&self, route: &Route) -> Option<(Arc<HandlerFn>, HashMap<String, String>)> {
+    pub fn match_path(&self, route: &Route) -> Option<(Arc<HandlerFn>, BTreeMap<String, String>)> {
         self.match_segments(route.segments())
     }
 
     pub fn match_segments(
         &self,
         segments: &[PathSegment],
-    ) -> Option<(Arc<HandlerFn>, HashMap<String, String>)> {
+    ) -> Option<(Arc<HandlerFn>, BTreeMap<String, String>)> {
         if segments.is_empty() {
             return self
                 .handler
                 .clone()
-                .map(|handler| (handler, HashMap::new()));
+                .map(|handler| (handler, BTreeMap::new()));
         }
 
         // Try static children first
@@ -193,7 +193,7 @@ impl RouteNode {
             } else if let Some(handler) = &child.handler {
                 // wildcard deep found
                 let remaining: Vec<_> = segments.to_vec();
-                let mut params = HashMap::new();
+                let mut params = BTreeMap::new();
                 params.insert(
                     "wildcard_deep".to_string(),
                     remaining

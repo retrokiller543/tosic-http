@@ -9,7 +9,7 @@ use crate::traits::from_request::FromRequest;
 use bytes::Bytes;
 use http::{HeaderMap, HeaderValue, Method, Uri, Version};
 use httparse::{Request, Status};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::convert::Infallible;
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
@@ -20,7 +20,7 @@ pub struct HttpRequest {
     pub uri: Uri,
     pub headers: HeaderMap,
     pub version: Version,
-    pub params: HashMap<String, String>,
+    pub params: BTreeMap<String, String>,
     pub data: State,
 }
 
@@ -118,11 +118,11 @@ impl HttpRequest {
         &self.version
     }
 
-    pub fn params(&self) -> &HashMap<String, String> {
+    pub fn params(&self) -> &BTreeMap<String, String> {
         &self.params
     }
 
-    pub fn params_mut(&mut self) -> &mut HashMap<String, String> {
+    pub fn params_mut(&mut self) -> &mut BTreeMap<String, String> {
         &mut self.params
     }
 }

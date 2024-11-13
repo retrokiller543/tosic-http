@@ -93,7 +93,7 @@ impl HttpResponse<BoxBody> {
     /// ```
     pub fn body<B>(mut self, body: B) -> Self
     where
-        B: MessageBody + Clone + 'static
+        B: MessageBody + Clone + 'static,
     {
         self.body = BoxBody::new(body);
 

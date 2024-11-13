@@ -5,7 +5,6 @@ use crate::request::{HttpPayload, HttpRequest};
 use crate::traits::from_request::FromRequest;
 use std::fmt::{Debug, Display};
 use std::str::FromStr;
-use crate::body::message_body::MessageBody;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Path<V>(pub V);
@@ -50,7 +49,7 @@ where
 
         let mut parsed_params = Vec::new();
 
-        for (_, value) in params {
+        for value in params.values() {
             let parsed: V = match value.clone().parse() {
                 Ok(val) => val,
                 Err(error) => return err(ExtractionError::Path(error.to_string())),
@@ -78,7 +77,7 @@ where
         }
 
         let mut parsed_params = Vec::new();
-        for (_, value) in params {
+        for value in params.values() {
             let parsed: V = match value.clone().parse() {
                 Ok(val) => val,
                 Err(error) => return err(ExtractionError::Path(error.to_string())),
