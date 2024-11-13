@@ -5,6 +5,7 @@ authors = ["Emil Schütt <emil.schutt@gmail.com>"]
 description = "Proc Macros for generating endpoints when using the `tosic-http` crate"
 keywords = ["proc_macro", "procmacro"]
 edition = "2021"
+license = "MIT"
 
 [lib]
 proc-macro = true

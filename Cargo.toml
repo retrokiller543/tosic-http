@@ -8,6 +8,7 @@ authors = ["Emil Schütt <emil.schutt@gmail.com>"]
 description = "A basic but powerful HTTP server implementation based on `actix-web`"
 keywords = ["http", "async"]
 edition = "2021"
+license = "MIT"
 
 [dependencies]
 bytes = "1.3.0"
