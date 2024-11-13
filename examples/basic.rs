@@ -82,11 +82,13 @@ struct TestTest {
     password: String,
 }
 
-#[get("/{password}/{username}")]
+#[get("/{id}/{name}")]
 async fn not_working(
-    path: HttpPath<(usize, usize)>,
+    path: HttpPath<(u8, String)>,
 ) -> Result<impl Responder<Body = BoxBody>, HttpServerError> {
-    Ok(HttpResponse::new(200))
+    let (id, name) = path.into_inner();
+
+    Ok(HttpResponse::new(200).body((id.to_string(), name)))
 }
 
 async fn test_handler(

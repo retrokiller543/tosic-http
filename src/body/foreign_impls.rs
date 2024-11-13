@@ -329,3 +329,73 @@ impl MessageBody for Cow<'static, str> {
         }
     }
 }
+
+macro_rules! tuple_body {
+    {$($T:ident)+} => {
+        #[allow(non_snake_case)]
+        /// Sending a tuple in the body might not send in the same order as the aruments are defined
+        impl<E, $($T,)+> MessageBody for ($($T,)+)
+        where
+            E: Into<Box<dyn std::error::Error>>,
+            $($T: MessageBody<Error = E> + Unpin + Clone,)+
+        {
+            type Error = E;
+
+            #[inline]
+            fn size(&self) -> BodySize {
+                let mut total_size = 0;
+                let mut is_stream = false;
+
+                let ($($T,)+) = self;
+
+                $({
+                    match $T.size() {
+                        BodySize::Sized(size) => total_size += size,
+                        BodySize::None => return BodySize::None,
+                    }
+                })+
+
+                BodySize::Sized(total_size)
+            }
+
+            #[inline]
+            fn poll_next(
+                mut self: Pin<&mut Self>,
+                cx: &mut Context<'_>,
+            ) -> Poll<Option<Result<Bytes, Self::Error>>> {
+                let ($($T,)+) = &mut *self;
+
+                $({
+                    let elem = Pin::new($T);
+                    match elem.poll_next(cx) {
+                        Poll::Ready(Some(Ok(bytes))) => return Poll::Ready(Some(Ok(bytes))),
+                        Poll::Ready(Some(Err(e))) => return Poll::Ready(Some(Err(e))),
+                        Poll::Ready(None) => {},
+                        Poll::Pending => return Poll::Pending,
+                    }
+                })+
+
+                Poll::Ready(None)
+            }
+
+            #[inline]
+            fn try_into_bytes(self) -> Result<Bytes, Self> {
+                let mut combined = BytesMut::new();
+
+                let ($($T,)+) = self.clone();
+
+                $({
+                    let bytes = $T.clone().try_into_bytes().map_err(|_| self.clone())?;
+                    combined.extend_from_slice(&bytes);
+                })+
+
+                Ok(combined.freeze())
+            }
+        }
+    };
+}
+
+tuple_body! { A }
+tuple_body! { A A1 }
+tuple_body! { A A1 A2 }
+tuple_body! { A A1 A2 A4 }

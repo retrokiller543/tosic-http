@@ -70,6 +70,27 @@ impl HttpResponse<BoxBody> {
         Ok(response_bytes)
     }
 
+    /// Sets the body for the response.
+    ///
+    /// The provided `body` must implement both [`MessageBody`] and [`Clone`], and it must have a `'static` lifetime to be compatible.
+    ///
+    /// ## Note
+    ///
+    /// Sending tuples as the body is supported, but it's important to note that the layout of tuple elements may be unpredictable when serialized to bytes, as Rust does not guarantee element ordering in tuples.
+    ///
+    /// # Parameters
+    /// - `body`: The body content to be set for the response, implementing [`MessageBody`] and [`Clone`].
+    ///
+    /// # Returns
+    /// Returns `Self`, allowing for method chaining.
+    ///
+    /// # Example
+    /// ```
+    /// # use tosic_http::response::HttpResponse;
+    ///
+    /// let response = HttpResponse::new(200)
+    ///     .body("Hello, world!");
+    /// ```
     pub fn body<B>(mut self, body: B) -> Self
     where
         B: MessageBody + Clone + 'static
