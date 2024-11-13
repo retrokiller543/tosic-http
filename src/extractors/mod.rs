@@ -5,6 +5,7 @@ use std::convert::Infallible;
 use std::future::Future;
 use thiserror::Error;
 
+pub mod data;
 pub mod json;
 pub mod query;
 
@@ -14,6 +15,8 @@ pub enum ExtractionError {
     Json(#[from] serde_json::Error),
     #[error("Failed to parse query: {0}")]
     Query(#[from] serde::de::value::Error),
+    #[error("Data with that type was not found")]
+    DataNotFound,
 }
 
 impl<E> FromRequest for Option<E>

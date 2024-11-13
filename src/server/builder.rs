@@ -3,6 +3,7 @@ use crate::error::Error;
 use crate::handlers::Handlers;
 use crate::server::HttpServer;
 use crate::services::HttpService;
+use crate::state::State;
 use crate::traits::from_request::FromRequest;
 use crate::traits::handler::Handler;
 use crate::traits::responder::Responder;
@@ -16,6 +17,7 @@ use tokio::net::ToSocketAddrs;
 pub struct HttpServerBuilder<T: ToSocketAddrs + Default + Clone> {
     addr: Option<T>,
     handlers: Handlers,
+    app_state: State,
 }
 
 impl<T: ToSocketAddrs + Default + Clone + Debug> HttpServerBuilder<T> {
@@ -23,6 +25,12 @@ impl<T: ToSocketAddrs + Default + Clone + Debug> HttpServerBuilder<T> {
         Self {
             ..Default::default()
         }
+    }
+
+    pub fn app_state<S: Send + Sync + 'static>(self, state: S) -> Self {
+        self.app_state.insert(state);
+
+        self
     }
 
     pub fn service_method<H, Args>(mut self, method: Method, path: &str, handler: H) -> Self
@@ -59,6 +67,6 @@ impl<T: ToSocketAddrs + Default + Clone + Debug> HttpServerBuilder<T> {
     pub async fn build(self) -> io::Result<HttpServer> {
         let addr = self.addr.unwrap_or_default();
 
-        HttpServer::new(addr, self.handlers).await
+        HttpServer::new(addr, self.handlers, self.app_state).await
     }
 }
