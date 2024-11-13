@@ -2,7 +2,6 @@ use crate::body::BoxBody;
 use crate::error::response_error::ResponseError;
 use crate::response::HttpResponse;
 use http::{HeaderMap, Response};
-use std::convert::Infallible;
 use std::fmt;
 use std::fmt::Debug;
 use thiserror::Error;
@@ -124,11 +123,5 @@ impl From<HttpResponse> for Response<BoxBody> {
         }
 
         response.body(value.body).unwrap()
-    }
-}
-
-impl From<Infallible> for Error {
-    fn from(value: Infallible) -> Self {
-        match value {}
     }
 }

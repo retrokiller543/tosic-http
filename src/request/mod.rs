@@ -4,22 +4,24 @@ use crate::body::message_body::MessageBody;
 use crate::body::BoxBody;
 use crate::error::ServerError;
 use crate::futures::{ok, Ready};
+use crate::state::State;
 use crate::traits::from_request::FromRequest;
 use bytes::Bytes;
 use http::{HeaderMap, HeaderValue, Method, Uri, Version};
 use httparse::{Request, Status};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::convert::Infallible;
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct HttpRequest {
     pub method: Method,
     pub uri: Uri,
     pub headers: HeaderMap,
     pub version: Version,
-    pub params: HashMap<String, String>,
+    pub params: BTreeMap<String, String>,
+    pub data: State,
 }
 
 #[derive(Clone, Debug)]
@@ -62,7 +64,7 @@ impl HttpRequest {
             uri,
             headers,
             version,
-            params: HashMap::new(),
+            ..Default::default()
         }
     }
 
@@ -116,11 +118,11 @@ impl HttpRequest {
         &self.version
     }
 
-    pub fn params(&self) -> &HashMap<String, String> {
+    pub fn params(&self) -> &BTreeMap<String, String> {
         &self.params
     }
 
-    pub fn params_mut(&mut self) -> &mut HashMap<String, String> {
+    pub fn params_mut(&mut self) -> &mut BTreeMap<String, String> {
         &mut self.params
     }
 }
@@ -160,7 +162,7 @@ impl From<Request<'_, '_>> for HttpRequest {
             uri,
             headers,
             version,
-            params: HashMap::new(),
+            ..Default::default()
         }
     }
 }

@@ -1,5 +1,10 @@
 use std::future::Future;
 
+#[diagnostic::on_unimplemented(
+    message = "Check the function signature and make sure it matches the format `async fn(..) -> impl Responder<Body = tosic_http::body::BoxBody>`",
+    label = "Used here",
+    note = "The above format is valid with up to 26 parameters where each parameter implements the `FromRequest` trait"
+)]
 pub trait Handler<Args>: 'static {
     type Output;
     type Future: Future<Output = Self::Output>;

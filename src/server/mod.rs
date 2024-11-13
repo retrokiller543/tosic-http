@@ -3,6 +3,7 @@ use crate::handlers::Handlers;
 use crate::request::{HttpPayload, HttpRequest};
 use crate::response::HttpResponse;
 use crate::route::HandlerFn;
+use crate::state::State;
 use std::sync::Arc;
 use tokio::io;
 use tokio::io::BufReader;
@@ -15,19 +16,25 @@ mod test;
 pub struct HttpServer {
     listener: tokio::net::TcpListener,
     handlers: Handlers,
+    app_state: State,
 }
 
 impl HttpServer {
-    #[tracing::instrument(level = "trace", skip(handlers))]
+    #[tracing::instrument(level = "trace")]
     pub(crate) async fn new<T: ToSocketAddrs + std::fmt::Debug>(
         addr: T,
         handlers: Handlers,
+        app_state: State,
     ) -> io::Result<Self> {
         let listener = tokio::net::TcpListener::bind(addr).await?;
 
         trace!("Server Bound to {}", listener.local_addr()?);
 
-        Ok(Self { listener, handlers })
+        Ok(Self {
+            listener,
+            handlers,
+            app_state,
+        })
     }
 
     pub async fn serve(self) -> Result<(), ServerError> {
@@ -51,6 +58,7 @@ impl HttpServer {
         stream: tokio::net::TcpStream,
         socket: std::net::SocketAddr,
         handlers: Handlers,
+        state: State,
     ) -> Result<(), ServerError> {
         trace!("Accepted connection from {}", socket);
 
@@ -71,6 +79,8 @@ impl HttpServer {
                 return Err(e);
             }
         };
+
+        request.data = state;
 
         trace!("Request: {:?}", request);
 
@@ -138,9 +148,10 @@ impl HttpServer {
         socket: std::net::SocketAddr,
     ) -> Result<(), ServerError> {
         let handlers = self.handlers.clone();
+        let state = self.app_state.clone();
 
         tokio::spawn(async move {
-            if let Err(e) = Self::handle_connection(stream, socket, handlers).await {
+            if let Err(e) = Self::handle_connection(stream, socket, handlers, state).await {
                 error!("Error handling connection from {}: {:?}", socket, e);
             }
         });

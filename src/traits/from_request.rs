@@ -15,6 +15,12 @@ use std::{
     task::{Context, Poll},
 };
 
+#[diagnostic::on_unimplemented(
+    message = "Make sure to implement `FromRequest` if you wish to use `{Self}` as an extractor",
+    label = "Consider not calling it here if this was intended and wrapping it function that may be used here",
+    note = "The FromRequest trait is implemented on all tuples up to size 26 that are filled with types that implement `FromRequest`",
+    note = "If you have more than 26 arguments the trait will not be implemented and you will need to restructure your endpoint"
+)]
 pub trait FromRequest: Sized {
     type Error: Into<Error>;
     type Future: Future<Output = Result<Self, Self::Error>>;

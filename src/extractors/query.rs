@@ -9,12 +9,14 @@ use std::fmt::Debug;
 pub struct Query<V>(pub V);
 
 impl<T> Query<T> {
+    #[inline]
     pub fn into_inner(self) -> T {
         self.0
     }
 }
 
 impl<T: DeserializeOwned> Query<T> {
+    #[inline]
     pub fn from_query(query: &str) -> Result<Self, ExtractionError> {
         serde_urlencoded::from_str::<T>(query)
             .map(Self)
@@ -24,12 +26,14 @@ impl<T: DeserializeOwned> Query<T> {
 
 impl<T> std::ops::Deref for Query<T> {
     type Target = T;
+    #[inline]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
 impl<T> std::ops::DerefMut for Query<T> {
+    #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
@@ -39,6 +43,7 @@ impl<V: DeserializeOwned> FromRequest for Query<V> {
     type Error = ExtractionError;
     type Future = Ready<Result<Query<V>, Self::Error>>;
 
+    #[inline]
     fn from_request(req: &HttpRequest, _: &mut HttpPayload) -> Self::Future {
         let query = req.uri().query().unwrap_or("");
 

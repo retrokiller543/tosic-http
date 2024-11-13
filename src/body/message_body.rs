@@ -7,6 +7,11 @@ use std::fmt::{Debug, Formatter};
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
+#[diagnostic::on_unimplemented(
+    message = "The trait `MessageBody` is not implemented on `{Self}`",
+    label = "Convert it to `Bytes` or `BytesMut` or any `String` type",
+    note = "if you find that `MessageBody` should be implemented on `{Self}`, then please submit an issue and it might be added in the future"
+)]
 pub trait MessageBody: Debug {
     type Error: Into<Box<dyn std::error::Error>>;
 

@@ -1,7 +1,7 @@
 use crate::route::path::Path;
 use std::borrow::Cow;
 use std::cmp::Ordering;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
 use std::ops::Add;
 
@@ -40,12 +40,12 @@ impl Route {
         &self.path
     }
 
-    pub fn is_match(&self, request_path: &str) -> Option<HashMap<String, String>> {
+    pub fn is_match(&self, request_path: &str) -> Option<BTreeMap<String, String>> {
         let request_segments = request_path
             .split('/')
             .filter(|segment| !segment.is_empty())
             .collect::<Vec<_>>();
-        let mut params = HashMap::new();
+        let mut params = BTreeMap::new();
 
         if self.matches_segments(&request_segments, &mut params) {
             Some(params)
@@ -57,7 +57,7 @@ impl Route {
     fn matches_segments(
         &self,
         request_segments: &[&str],
-        params: &mut HashMap<String, String>,
+        params: &mut BTreeMap<String, String>,
     ) -> bool {
         let route_iter = self.path.iter();
         let mut request_iter = request_segments.iter();
