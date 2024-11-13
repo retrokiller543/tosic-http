@@ -18,6 +18,7 @@ use tosic_http::traits::responder::Responder;
 use tosic_http_macro::get;
 use tracing::dispatcher::SetGlobalDefaultError;
 use tosic_http::error::response_error::ResponseError;
+use tosic_http::extractors::path::Path as HttpPath;
 
 #[derive(Debug, Error)]
 enum HttpServerError {
@@ -79,13 +80,15 @@ mod logger {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 struct TestTest {
     username: String,
     password: String,
 }
 
-async fn not_working() -> Result<impl Responder<Body = BoxBody>, HttpServerError> {
+#[get("/{password}/{username}")]
+async fn not_working(path: HttpPath<TestTest>) -> Result<impl Responder<Body = BoxBody>, HttpServerError> {
+    dbg!(path);
     Ok(HttpResponse::new(405))
 }
 
@@ -114,7 +117,7 @@ struct State {
     dir: String,
 }
 
-#[get("**")]
+/*#[get("**")]
 #[tracing::instrument]
 async fn website(req: HttpRequest, data: Data<State>) -> impl Responder<Body = BoxBody> {
     const DEFAULT_URL: &str = "index.html";
@@ -173,7 +176,7 @@ async fn website(req: HttpRequest, data: Data<State>) -> impl Responder<Body = B
     } else {
         HttpResponse::new(404)
     }
-}
+}*/
 
 #[tokio::main]
 async fn main() -> Result<(), HttpServerError> {
@@ -186,9 +189,10 @@ async fn main() -> Result<(), HttpServerError> {
         .app_state(state)
         .addr("0.0.0.0:4221")
         .service_method(Method::POST, "/", test_handler)
-        .service_method(Method::GET, "/bad", not_working)
+        //.service_method(Method::GET, "/bad", not_working)
+        .service(not_working)
         .service(test_fn)
-        .service(website)
+        //.service(website)
         .build()
         .await?;
 
