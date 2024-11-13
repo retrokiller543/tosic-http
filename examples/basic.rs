@@ -1,5 +1,4 @@
 #![allow(dead_code)]
-
 #![feature(impl_trait_in_assoc_type)]
 
 use http::Method;
@@ -85,10 +84,9 @@ struct TestTest {
 
 #[get("/{password}/{username}")]
 async fn not_working(
-    path: HttpPath<TestTest>,
+    path: HttpPath<(usize, usize)>,
 ) -> Result<impl Responder<Body = BoxBody>, HttpServerError> {
-    dbg!(path);
-    Ok(HttpResponse::new(405))
+    Ok(HttpResponse::new(200))
 }
 
 async fn test_handler(

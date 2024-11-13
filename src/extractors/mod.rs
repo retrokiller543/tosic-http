@@ -20,6 +20,12 @@ pub enum ExtractionError {
     DataNotFound,
     #[error(transparent)]
     QuerySerialize(#[from] serde_urlencoded::ser::Error),
+    #[error("An error happened when getting the path parameter: {0}")]
+    Path(String),
+    #[error("Expected there to be param but there was none")]
+    MissingPathField,
+    #[error("Invalid length of data when extracting")]
+    InvalidLength
 }
 
 impl<E> FromRequest for Option<E>
@@ -30,6 +36,7 @@ where
     type Error = Infallible;
     type Future = impl Future<Output = Result<Option<E>, Self::Error>> + Send;
 
+    #[inline]
     fn from_request(req: &HttpRequest, payload: &mut HttpPayload) -> Self::Future {
         let future = E::from_request(req, payload);
 
@@ -52,6 +59,7 @@ where
     type Error = Infallible;
     type Future = impl Future<Output = Result<Result<E, Err>, Self::Error>> + Send;
 
+    #[inline]
     fn from_request(req: &HttpRequest, payload: &mut HttpPayload) -> Self::Future {
         let future = E::from_request(req, payload);
 

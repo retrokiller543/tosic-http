@@ -43,9 +43,6 @@ impl HttpResponse<BoxBody> {
     pub fn set_body(self, body: BoxBody) -> Self {
         Self { body, ..self }
     }
-    pub fn body(&self) -> &BoxBody {
-        &self.body
-    }
 
     pub fn to_bytes(&self) -> io::Result<Vec<u8>> {
         let mut response_bytes = Vec::new();
@@ -71,6 +68,15 @@ impl HttpResponse<BoxBody> {
         response_bytes.write_all(&body)?;
 
         Ok(response_bytes)
+    }
+
+    pub fn body<B>(mut self, body: B) -> Self
+    where
+        B: MessageBody + Clone + 'static
+    {
+        self.body = BoxBody::new(body);
+
+        self
     }
 }
 

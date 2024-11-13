@@ -1,14 +1,22 @@
+use crate::error::response_error::ResponseError;
 use crate::extractors::ExtractionError;
 use crate::futures::{err, ok, Ready};
 use crate::request::{HttpPayload, HttpRequest};
 use crate::traits::from_request::FromRequest;
-use serde::de::DeserializeOwned;
-use std::collections::HashMap;
+use std::fmt::{Debug, Display};
+use std::str::FromStr;
+use crate::body::message_body::MessageBody;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Path<V>(pub V);
 
 impl<T> Path<T> {
+    #[inline]
+    pub(crate) fn new(value: T) -> Self {
+        Path(value)
+    }
+
+    #[inline]
     pub fn into_inner(self) -> T {
         self.0
     }
@@ -16,41 +24,112 @@ impl<T> Path<T> {
 
 impl<T> std::ops::Deref for Path<T> {
     type Target = T;
+    #[inline]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
 impl<T> std::ops::DerefMut for Path<T> {
+    #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
 
-impl<V: DeserializeOwned> Path<V> {
-    pub fn from_params(params: &HashMap<String, String>) -> Result<Self, ExtractionError> {
-        // Convert the HashMap to a query string
-        let query_string =
-            serde_urlencoded::to_string(params).map_err(ExtractionError::QuerySerialize)?;
+impl<V: FromStr> FromRequest for Path<Vec<V>>
+where
+    V::Err: ResponseError + Display + Debug,
+{
+    type Error = ExtractionError;
+    type Future = Ready<Result<Self, Self::Error>>;
 
-        // Deserialize the query string into the desired type
-        serde_urlencoded::from_str::<V>(&query_string)
-            .map(Self)
-            .map_err(ExtractionError::Query)
+    #[inline]
+    fn from_request(req: &HttpRequest, _: &mut HttpPayload) -> Self::Future {
+        let params = req.params();
+
+        let mut parsed_params = Vec::new();
+
+        for (_, value) in params {
+            let parsed: V = match value.clone().parse() {
+                Ok(val) => val,
+                Err(error) => return err(ExtractionError::Path(error.to_string())),
+            };
+
+            parsed_params.push(parsed);
+        }
+
+        ok(Path::new(parsed_params))
     }
 }
 
-impl<V: DeserializeOwned> FromRequest for Path<V> {
+impl<V: FromStr, const N: usize> FromRequest for Path<[V; N]>
+where
+    V::Err: ResponseError + Display + Debug,
+{
     type Error = ExtractionError;
-    type Future = Ready<Result<Path<V>, Self::Error>>;
+    type Future = Ready<Result<Self, Self::Error>>;
 
+    #[inline]
     fn from_request(req: &HttpRequest, _: &mut HttpPayload) -> Self::Future {
-        // Extract the path parameters from the request
         let params = req.params();
+        if params.len() != N {
+            return err(ExtractionError::InvalidLength);
+        }
 
-        match Self::from_params(params) {
-            Ok(path) => ok(path),
-            Err(error) => err(error),
+        let mut parsed_params = Vec::new();
+        for (_, value) in params {
+            let parsed: V = match value.clone().parse() {
+                Ok(val) => val,
+                Err(error) => return err(ExtractionError::Path(error.to_string())),
+            };
+            parsed_params.push(parsed);
+        }
+
+        match parsed_params.try_into() {
+            Ok(array) => ok(Path::new(array)),
+            Err(_) => err(ExtractionError::InvalidLength),
         }
     }
 }
+
+macro_rules! impl_tuple (
+    {$($T:ident)+} => {
+        #[allow(non_snake_case)]
+        impl<$($T: FromStr),+> FromRequest for Path<($($T,)+)>
+        where
+            $($T::Err: ResponseError + Display + Debug,)+
+        {
+            type Error = ExtractionError;
+            type Future = Ready<Result<Self, Self::Error>>;
+
+            #[inline]
+            fn from_request(req: &HttpRequest, _: &mut HttpPayload) -> Self::Future {
+                let params = req.params();
+                let mut iter = params.values();
+
+                $(let $T: $T = match iter.next() {
+                    Some(val) => match val.clone().parse() {
+                        Ok(v) => v,
+                        Err(error) => return err(ExtractionError::Path(error.to_string())),
+                    },
+                    None => return err(ExtractionError::MissingPathField),
+                };)+
+
+                let result = ($($T,)+);
+
+                ok(Path::new(result))
+            }
+        }
+    };
+);
+
+impl_tuple! {A}
+impl_tuple! {A A1}
+impl_tuple! {A A1 A2}
+impl_tuple! {A A1 A2 A3}
+impl_tuple! {A A1 A2 A3 A4}
+impl_tuple! {A A1 A2 A3 A4 A5}
+impl_tuple! {A A1 A2 A3 A4 A5 A6}
+impl_tuple! {A A1 A2 A3 A4 A5 A6 A7}
+impl_tuple! {A A1 A2 A3 A4 A5 A6 A7 A8}

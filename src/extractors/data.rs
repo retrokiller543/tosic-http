@@ -10,9 +10,11 @@ use std::sync::Arc;
 pub struct Data<T: Send + Sync + 'static>(pub Arc<T>);
 
 impl<T: Send + Sync + 'static> Data<T> {
+    #[inline]
     pub(crate) fn new(data: Arc<T>) -> Self {
         Data(data)
     }
+    #[inline]
     pub fn into_inner(self) -> Arc<T> {
         Arc::clone(&self.0)
     }
@@ -22,6 +24,7 @@ impl<T: Send + Sync + 'static> FromRequest for Data<T> {
     type Error = ExtractionError;
     type Future = Ready<Result<Data<T>, Self::Error>>;
 
+    #[inline]
     fn from_request(req: &HttpRequest, _: &mut HttpPayload) -> Self::Future {
         let data = &req.data;
 
@@ -35,6 +38,7 @@ impl<T: Send + Sync + 'static> FromRequest for Data<T> {
 impl<T: Send + Sync + 'static> Deref for Data<T> {
     type Target = T;
 
+    #[inline]
     fn deref(&self) -> &Self::Target {
         &self.0
     }

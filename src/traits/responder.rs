@@ -21,6 +21,7 @@ where
 {
     type Body = BoxBody;
 
+    #[inline]
     fn respond_to(self, req: &HttpRequest) -> HttpResponse<Self::Body> {
         match self {
             Ok(okay) => okay.respond_to(req),
