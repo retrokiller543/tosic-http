@@ -1,24 +1,21 @@
+#![allow(dead_code)]
+
 #![feature(impl_trait_in_assoc_type)]
 
 use http::Method;
 use serde::Deserialize;
-use std::path::Path;
 use thiserror::Error;
-use tokio::fs::File;
 use tokio::io;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tosic_http::body::BoxBody;
-use tosic_http::extractors::data::Data;
+use tosic_http::error::response_error::ResponseError;
 use tosic_http::extractors::json::Json;
+use tosic_http::extractors::path::Path as HttpPath;
 use tosic_http::extractors::query::Query;
-use tosic_http::request::HttpRequest;
 use tosic_http::response::HttpResponse;
 use tosic_http::server::builder::HttpServerBuilder;
 use tosic_http::traits::responder::Responder;
 use tosic_http_macro::get;
 use tracing::dispatcher::SetGlobalDefaultError;
-use tosic_http::error::response_error::ResponseError;
-use tosic_http::extractors::path::Path as HttpPath;
 
 #[derive(Debug, Error)]
 enum HttpServerError {
@@ -87,7 +84,9 @@ struct TestTest {
 }
 
 #[get("/{password}/{username}")]
-async fn not_working(path: HttpPath<TestTest>) -> Result<impl Responder<Body = BoxBody>, HttpServerError> {
+async fn not_working(
+    path: HttpPath<TestTest>,
+) -> Result<impl Responder<Body = BoxBody>, HttpServerError> {
     dbg!(path);
     Ok(HttpResponse::new(405))
 }

@@ -1,9 +1,9 @@
-use std::collections::HashMap;
-use serde::de::DeserializeOwned;
 use crate::extractors::ExtractionError;
 use crate::futures::{err, ok, Ready};
 use crate::request::{HttpPayload, HttpRequest};
 use crate::traits::from_request::FromRequest;
+use serde::de::DeserializeOwned;
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Path<V>(pub V);
@@ -30,7 +30,8 @@ impl<T> std::ops::DerefMut for Path<T> {
 impl<V: DeserializeOwned> Path<V> {
     pub fn from_params(params: &HashMap<String, String>) -> Result<Self, ExtractionError> {
         // Convert the HashMap to a query string
-        let query_string = serde_urlencoded::to_string(params).map_err(ExtractionError::QuerySerialize)?;
+        let query_string =
+            serde_urlencoded::to_string(params).map_err(ExtractionError::QuerySerialize)?;
 
         // Deserialize the query string into the desired type
         serde_urlencoded::from_str::<V>(&query_string)

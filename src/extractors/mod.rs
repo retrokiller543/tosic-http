@@ -7,8 +7,8 @@ use thiserror::Error;
 
 pub mod data;
 pub mod json;
-pub mod query;
 pub mod path;
+pub mod query;
 
 #[derive(Debug, Error)]
 pub enum ExtractionError {
@@ -19,7 +19,7 @@ pub enum ExtractionError {
     #[error("Data with that type was not found")]
     DataNotFound,
     #[error(transparent)]
-    QuerySerialize(#[from] serde_urlencoded::ser::Error)
+    QuerySerialize(#[from] serde_urlencoded::ser::Error),
 }
 
 impl<E> FromRequest for Option<E>
