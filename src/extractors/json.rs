@@ -5,13 +5,12 @@ use crate::extractors::ExtractionError;
 use crate::futures::{err, ok, Ready};
 use crate::traits::from_request::FromRequest;
 use serde::de::DeserializeOwned;
-use serde::Serialize;
 use std::fmt::Debug;
 
-#[derive(Debug)]
-pub struct Json<V: DeserializeOwned + Serialize + Debug>(pub V);
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Json<V>(pub V);
 
-impl<V: Serialize + Send + for<'de> serde::Deserialize<'de> + Debug> FromRequest for Json<V> {
+impl<V: DeserializeOwned> FromRequest for Json<V> {
     type Error = ServerError;
     type Future = Ready<Result<Json<V>, Self::Error>>;
     fn from_request(
@@ -30,13 +29,13 @@ impl<V: Serialize + Send + for<'de> serde::Deserialize<'de> + Debug> FromRequest
     }
 }
 
-impl<T: DeserializeOwned + Serialize + Debug> Json<T> {
+impl<T> Json<T> {
     pub fn into_inner(self) -> T {
         self.0
     }
 }
 
-impl<T: DeserializeOwned + Serialize + Debug> std::ops::Deref for Json<T> {
+impl<T> std::ops::Deref for Json<T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -44,7 +43,7 @@ impl<T: DeserializeOwned + Serialize + Debug> std::ops::Deref for Json<T> {
     }
 }
 
-impl<T: DeserializeOwned + Serialize + Debug> std::ops::DerefMut for Json<T> {
+impl<T> std::ops::DerefMut for Json<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }

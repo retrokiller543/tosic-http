@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use crate::body::BoxBody;
 use crate::error::Error;
 use crate::handlers::Handlers;
@@ -17,7 +18,7 @@ pub struct HttpServerBuilder<T: ToSocketAddrs + Default + Clone> {
     handlers: Handlers,
 }
 
-impl<T: ToSocketAddrs + Default + Clone> HttpServerBuilder<T> {
+impl<T: ToSocketAddrs + Default + Clone + Debug> HttpServerBuilder<T> {
     pub(crate) fn new() -> Self {
         Self {
             ..Default::default()

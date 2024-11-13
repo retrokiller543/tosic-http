@@ -1,11 +1,14 @@
-use crate::error::ServerError;
+use std::sync::Arc;
+use crate::error::{Error, ServerError};
 use crate::handlers::Handlers;
-use crate::request::HttpRequest;
+use crate::request::{HttpPayload, HttpRequest};
 use tokio::io;
-use tokio::io::AsyncReadExt;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::io::BufReader;
 use tokio::net::ToSocketAddrs;
 use tracing::{debug, error, info, trace};
+use crate::response::HttpResponse;
+use crate::route::HandlerFn;
 
 pub mod builder;
 mod test;
@@ -15,7 +18,8 @@ pub struct HttpServer {
 }
 
 impl HttpServer {
-    pub async fn new<T: ToSocketAddrs>(addr: T, handlers: Handlers) -> io::Result<Self> {
+    #[tracing::instrument(level = "trace", skip(handlers))]
+    pub(crate) async fn new<T: ToSocketAddrs + std::fmt::Debug>(addr: T, handlers: Handlers) -> io::Result<Self> {
         let listener = tokio::net::TcpListener::bind(addr).await?;
 
         trace!("Server Bound to {}", listener.local_addr()?);
@@ -39,6 +43,7 @@ impl HttpServer {
         }
     }
 
+    #[tracing::instrument(level = "trace", skip_all)]
     async fn handle_connection(
         stream: tokio::net::TcpStream,
         socket: std::net::SocketAddr,
@@ -56,7 +61,7 @@ impl HttpServer {
             }
         };
 
-        let request = match HttpRequest::from_bytes(&request_buffer) {
+        let (mut request, payload) = match HttpRequest::from_bytes(&request_buffer) {
             Ok(req) => req,
             Err(e) => {
                 error!("Failed to parse request: {}", e);
@@ -64,9 +69,55 @@ impl HttpServer {
             }
         };
 
-        dbg!(&request);
+        trace!("Request: {:?}", request);
+
+        let handler = handlers.get_handler(request.method(), request.uri().path());
+
+        request.params_mut().extend(handler.1.clone());
+
+        let response = Self::process_request(handler.0, request, payload).await.unwrap_or_else(|e| {
+            error!("Failed to process request: {}", e);
+            e.error_response()
+        });
+
+        //let bytes = response.to_bytes()?;
+
+        Self::send_response(reader, response).await
+    }
+
+    #[tracing::instrument(level = "trace", skip(reader))]
+    async fn send_response(
+        reader: BufReader<tokio::net::TcpStream>,
+        response: HttpResponse,
+    ) -> Result<(), ServerError> {
+        let response_bytes = response.to_bytes()?;
+
+        let mut stream = reader.into_inner();
+        stream.write_all(&response_bytes).await?;
+        stream.flush().await?;
 
         Ok(())
+    }
+
+    #[tracing::instrument(level = "trace", skip_all)]
+    async fn process_request(handler: Arc<HandlerFn>, request: HttpRequest, mut payload: HttpPayload) -> Result<HttpResponse, Error> {
+        let preprocessed_request = Self::pre_process_request(&request).await?;
+        let response: HttpResponse = handler.call((preprocessed_request, &mut payload)).await?;
+        let post_processed_response = Self::post_process_request(response).await?;
+
+        Ok(post_processed_response)
+    }
+
+    /// Processes the request before passing it to the handler
+    #[tracing::instrument(level = "trace", skip_all)]
+    async fn pre_process_request(request: &HttpRequest) -> Result<HttpRequest, Error> {
+        Ok(request.clone())
+    }
+
+    /// Processes the response we got from the handler before returning it to the client
+    #[tracing::instrument(level = "trace", skip_all)]
+    async fn post_process_request(response: HttpResponse) -> Result<HttpResponse, Error> {
+        Ok(response)
     }
 
     #[allow(unused_variables)]
@@ -86,6 +137,7 @@ impl HttpServer {
         Ok(())
     }
 
+    #[tracing::instrument(level = "trace", skip(reader))]
     async fn read_request(
         reader: &mut BufReader<tokio::net::TcpStream>,
     ) -> Result<Vec<u8>, ServerError> {

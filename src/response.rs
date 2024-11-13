@@ -3,6 +3,9 @@ use crate::request::HttpRequest;
 use crate::traits::responder::Responder;
 use http::StatusCode;
 use std::fmt::Debug;
+use tokio::io;
+use std::io::Write;
+use crate::body::message_body::MessageBody;
 
 #[derive(Clone, Debug)]
 pub struct HttpResponse<Body = BoxBody> {
@@ -39,6 +42,35 @@ impl HttpResponse<BoxBody> {
 
     pub fn set_body(self, body: BoxBody) -> Self {
         Self { body, ..self }
+    }
+    pub fn body(&self) -> &BoxBody {
+        &self.body
+    }
+
+    pub fn to_bytes(&self) -> io::Result<Vec<u8>> {
+        let mut response_bytes = Vec::new();
+
+        let status_line = format!(
+            "{:?} {} {}\r\n",
+            self.version,
+            self.status_code.as_str(),
+            self.status_code.canonical_reason().unwrap_or("Unknown")
+        );
+
+        response_bytes.write_all(status_line.as_bytes())?;
+
+        for (key, value) in &self.headers {
+            let header_line = format!("{}: {}\r\n", key, value.to_str().unwrap());
+            response_bytes.write_all(header_line.as_bytes())?;
+        }
+
+        response_bytes.write_all(b"\r\n")?;
+
+        let body = self.clone().body.try_into_bytes().unwrap_or_default(); // TODO: There is probably a better way to handle this
+
+        response_bytes.write_all(&body)?;
+
+        Ok(response_bytes)
     }
 }
 

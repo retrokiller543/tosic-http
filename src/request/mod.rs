@@ -12,6 +12,8 @@ use std::collections::HashMap;
 use std::convert::Infallible;
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
+use serde::de::DeserializeOwned;
+use crate::extractors::query::Query;
 
 #[derive(Clone, Debug)]
 pub struct HttpRequest {
@@ -19,8 +21,7 @@ pub struct HttpRequest {
     pub uri: Uri,
     pub headers: HeaderMap,
     pub version: Version,
-    pub params: Option<HashMap<String, String>>,
-    //pub payload: HttpPayload
+    pub params: HashMap<String, String>,
 }
 
 #[derive(Clone, Debug)]
@@ -63,13 +64,13 @@ impl HttpRequest {
             uri,
             headers,
             version,
-            params: None,
+            params: HashMap::new(),
         }
     }
 
     pub(crate) fn from_bytes(buffer: &[u8]) -> Result<(Self, HttpPayload), ServerError> {
         let mut headers = [httparse::EMPTY_HEADER; 32];
-        let mut req = httparse::Request::new(&mut headers);
+        let mut req = Request::new(&mut headers);
 
         match req.parse(buffer) {
             Ok(Status::Complete(_)) => {
@@ -92,6 +93,40 @@ impl HttpRequest {
             Err(e) => Err(ServerError::ParseError(e)),
         }
     }
+
+    pub fn uri(&self) -> &Uri {
+        &self.uri
+    }
+
+    pub fn path(&self) -> &str {
+        self.uri().path()
+    }
+
+    pub fn query(&self) -> Option<&str> {
+        self.uri().query()
+    }
+
+    pub fn method(&self) -> &Method {
+        &self.method
+    }
+
+    pub fn headers(&self) -> &HeaderMap {
+        &self.headers
+    }
+
+    pub fn version(&self) -> &Version {
+        &self.version
+    }
+
+    pub fn params(&self) -> &HashMap<String, String> {
+        &self.params
+    }
+
+    pub fn params_mut(&mut self) -> &mut HashMap<String, String> {
+        &mut self.params
+    }
+
+
 }
 
 impl FromRequest for HttpRequest {
@@ -103,7 +138,7 @@ impl FromRequest for HttpRequest {
     }
 }
 
-impl From<httparse::Request<'_, '_>> for HttpRequest {
+impl From<Request<'_, '_>> for HttpRequest {
     fn from(value: Request) -> Self {
         let version = match value.version.unwrap_or(0) {
             0 => Version::HTTP_10,
@@ -129,7 +164,7 @@ impl From<httparse::Request<'_, '_>> for HttpRequest {
             uri,
             headers,
             version,
-            params: None,
+            params: HashMap::new(),
         }
     }
 }
