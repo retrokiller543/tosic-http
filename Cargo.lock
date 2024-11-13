@@ -1319,11 +1319,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tosic-env-utils"
-version = "0.1.0"
-source = "git+https://github.com/retrokiller543/tosic-utils.git#a6d417ec7eb4e53daec243f185850d18c2dcebd8"
-
-[[package]]
 name = "tosic-http"
 version = "0.0.0"
 dependencies = [
@@ -1344,7 +1339,6 @@ dependencies = [
  "tokio",
  "tokio-util",
  "tosic-http-macro",
- "tosic-utils",
  "tower 0.5.1",
  "tracing",
  "tracing-subscriber",
@@ -1358,24 +1352,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "tosic-logging-utils"
-version = "0.1.0"
-source = "git+https://github.com/retrokiller543/tosic-utils.git#a6d417ec7eb4e53daec243f185850d18c2dcebd8"
-dependencies = [
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "tosic-utils"
-version = "0.2.0"
-source = "git+https://github.com/retrokiller543/tosic-utils.git#a6d417ec7eb4e53daec243f185850d18c2dcebd8"
-dependencies = [
- "tosic-env-utils",
- "tosic-logging-utils",
 ]
 
 [[package]]

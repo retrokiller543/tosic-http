@@ -27,7 +27,6 @@ thiserror = "2.0.0"
 tokio = { version = "1.41.1", features = ["full"] }
 tokio-util = { version =  "0.7.12", features = ["full"] }
 tosic-http-macro = { path = "tosic-http-macro" }
-tosic-utils = { git = "https://github.com/retrokiller543/tosic-utils.git", features = ["env", "tracing"] }
 tower = { version = "0.5.1", features = ["full"] }
 tracing = { version = "0.1.37", features = ["log"] }
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"], optional = true }
