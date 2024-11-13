@@ -2,9 +2,9 @@
 name = "tosic-http-macro"
 version = "0.0.0"
 authors = ["Emil Schütt <emil.schutt@gmail.com>"]
-description = "A `cargo generate` template for quick-starting a procedural macro crate"
-keywords = ["template", "proc_macro", "procmacro"]
-edition = "2018"
+description = "Proc Macros for generating endpoints when using the `tosic-http` crate"
+keywords = ["proc_macro", "procmacro"]
+edition = "2021"
 
 [lib]
 proc-macro = true

@@ -4,6 +4,9 @@ members = [".", "tosic-http-macro"]
 [package]
 name = "tosic-http"
 version = "0.0.0"
+authors = ["Emil Schütt <emil.schutt@gmail.com>"]
+description = "A basic but powerful HTTP server implementation based on `actix-web`"
+keywords = ["http", "async"]
 edition = "2021"
 
 [dependencies]
