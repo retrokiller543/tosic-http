@@ -58,15 +58,25 @@ where
 pub struct RouteNode {
     static_children: HashMap<Cow<'static, str>, RouteNode>,
     parameter_child: Option<(Cow<'static, str>, Box<RouteNode>)>,
+    wildcard_child: Option<Box<RouteNode>>,
     handler: Option<Arc<HandlerFn>>,
 }
 
 impl Debug for RouteNode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("RouteNode")
+        let mut binding = f.debug_struct("RouteNode");
+        let f = binding
             .field("static_children", &self.static_children)
             .field("parameter_child", &self.parameter_child)
-            .finish()
+            .field("wildcard_child", &self.wildcard_child);
+
+        let f = if self.handler.is_some() {
+            f.field("handler", &"Fn")
+        } else {
+            f.field("handler", &"None")
+        };
+
+        f.finish()
     }
 }
 
@@ -81,6 +91,7 @@ impl RouteNode {
         RouteNode {
             static_children: HashMap::new(),
             parameter_child: None,
+            wildcard_child: None,
             handler: None,
         }
     }
@@ -116,10 +127,27 @@ impl RouteNode {
                 if self.parameter_child.is_none() {
                     self.parameter_child = Some((param_name.clone(), Box::new(RouteNode::new())));
                 }
+
                 let (_, child_node) = self.parameter_child.as_mut().unwrap();
                 child_node.insert_segments(&segments[1..], handler);
             }
-            _ => {}
+            PathSegment::Wildcard => {
+                if self.wildcard_child.is_none() {
+                    self.wildcard_child = Some(Box::new(RouteNode::new()));
+                }
+
+                let child_node = self.wildcard_child.as_mut().unwrap();
+                child_node.insert_segments(&segments[1..], handler);
+            }
+            PathSegment::WildcardDeep => {
+                if self.wildcard_child.is_none() {
+                    self.wildcard_child = Some(Box::new(RouteNode::new()));
+                }
+
+                let child_node = self.wildcard_child.as_mut().unwrap();
+                // WildcardDeep means this node should handle all remaining segments
+                child_node.handler = Some(handler.clone());
+            }
         }
     }
 
@@ -127,7 +155,7 @@ impl RouteNode {
         self.match_segments(route.segments())
     }
 
-    fn match_segments(
+    pub fn match_segments(
         &self,
         segments: &[PathSegment],
     ) -> Option<(Arc<HandlerFn>, HashMap<String, String>)> {
@@ -155,6 +183,30 @@ impl RouteNode {
                 }
                 return Some((handler, params));
             }
+        }
+
+        // Then try wildcard child
+        if let Some(child) = &self.wildcard_child {
+            return if let Some((handler, params)) = child.match_segments(&segments[1..]) {
+                // wildcard found
+                Some((handler, params))
+            } else if let Some(handler) = &child.handler {
+                // wildcard deep found
+                let remaining: Vec<_> = segments.to_vec();
+                let mut params = HashMap::new();
+                params.insert(
+                    "wildcard_deep".to_string(),
+                    remaining
+                        .iter()
+                        .map(|segment| format!("{}", segment))
+                        .collect::<Vec<_>>()
+                        .join("/"),
+                );
+                Some((child.handler.clone()?, params))
+            } else {
+                // no wildcard found
+                None
+            };
         }
 
         None

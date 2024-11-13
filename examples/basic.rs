@@ -1,3 +1,5 @@
+#![feature(impl_trait_in_assoc_type)]
+
 use http::Method;
 use serde::Deserialize;
 use thiserror::Error;
@@ -5,8 +7,11 @@ use tokio::io;
 use tosic_http::body::BoxBody;
 use tosic_http::extractors::json::Json;
 use tosic_http::extractors::query::Query;
+use tosic_http::request::HttpRequest;
+use tosic_http::response::HttpResponse;
 use tosic_http::server::builder::HttpServerBuilder;
 use tosic_http::traits::responder::Responder;
+use tosic_http_macro::get;
 use tracing::dispatcher::SetGlobalDefaultError;
 
 #[derive(Debug, Error)]
@@ -68,18 +73,43 @@ mod logger {
 }
 
 #[derive(Deserialize)]
-struct Test {
+struct TestTest {
     username: String,
     password: String,
 }
 
-async fn test_handler(query: Query<Test>, json: Json<Test>) -> impl Responder<Body = BoxBody> {
-    let test = query.into_inner();
+async fn test_handler(
+    query: Option<Query<TestTest>>,
+    json: Json<TestTest>,
+) -> impl Responder<Body = BoxBody> {
     let json = json.into_inner();
 
-    assert_eq!(test.username, json.username);
+    if let Some(query) = query {
+        let test = query.into_inner();
 
-    format!("Hello, {}!", test.username)
+        assert_eq!(test.username, json.username);
+        assert_eq!(test.password, json.password);
+    }
+
+    format!("Hello, {}!", json.username)
+}
+
+#[get("/test")]
+async fn test_fn() -> impl Responder<Body = BoxBody> {
+    "hello testing world"
+}
+
+#[get("/**")]
+async fn website(req: HttpRequest) -> impl Responder<Body = BoxBody> {
+    let file = req.params().get("wildcard_deep");
+
+    if let Some(path) = file {
+        let body = BoxBody::new(path.clone());
+
+        HttpResponse::new(200).set_body(body)
+    } else {
+        HttpResponse::new(404)
+    }
 }
 
 #[tokio::main]
@@ -89,6 +119,8 @@ async fn main() -> Result<(), HttpServerError> {
     let server = HttpServerBuilder::default()
         .addr("0.0.0.0:4221")
         .service_method(Method::POST, "/", test_handler)
+        .service(test_fn)
+        .service(website)
         .build()
         .await?;
 

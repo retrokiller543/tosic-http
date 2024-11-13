@@ -46,7 +46,7 @@ impl HttpServer {
         }
     }
 
-    #[tracing::instrument(level = "trace", skip_all)]
+    #[tracing::instrument(level = "info", skip_all)]
     async fn handle_connection(
         stream: tokio::net::TcpStream,
         socket: std::net::SocketAddr,
@@ -77,6 +77,8 @@ impl HttpServer {
         let handler = handlers.get_handler(request.method(), request.uri().path());
 
         request.params_mut().extend(handler.1.clone());
+
+        debug!("Request: {:?}", request);
 
         let response = Self::process_request(handler.0, request, payload)
             .await

@@ -2,6 +2,7 @@ use crate::route::path::Path;
 use std::borrow::Cow;
 use std::cmp::Ordering;
 use std::collections::HashMap;
+use std::fmt::{Display, Formatter};
 use std::ops::Add;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -15,6 +16,17 @@ pub enum PathSegment {
     Parameter(Cow<'static, str>),
     Wildcard,
     WildcardDeep,
+}
+
+impl Display for PathSegment {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Static(string) => write!(f, "{}", string),
+            Self::Parameter(param) => write!(f, "{}", param),
+            Self::Wildcard => write!(f, "*"),
+            Self::WildcardDeep => write!(f, "**"),
+        }
+    }
 }
 
 impl Route {

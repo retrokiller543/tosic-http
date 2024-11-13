@@ -27,6 +27,24 @@ where
     }
 }
 
+/*impl<B> MessageBody for &B
+where
+    B: MessageBody + Unpin + ?Sized,
+{
+    type Error = B::Error;
+
+    fn size(&self) -> BodySize {
+        (**self).size()
+    }
+
+    fn poll_next(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+    ) -> Poll<Option<Result<Bytes, Self::Error>>> {
+        Pin::new(&**self).poll_next(cx)
+    }
+}*/
+
 impl MessageBody for Infallible {
     type Error = Infallible;
 

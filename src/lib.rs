@@ -17,3 +17,5 @@ pub mod server;
 pub mod services;
 pub mod traits;
 pub mod utils;
+
+pub use tosic_http_macro::*;

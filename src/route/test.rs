@@ -65,6 +65,27 @@ fn test_route_iteration() {
     assert_eq!(segments.len(), 2);
 }
 
+#[test]
+fn test_match_wildcard_path() {
+    let mut root = RouteNode::new();
+    root.insert(&Route::new("/wildcard/*"), |_req: HttpRequest| async move {
+        HttpResponse::new(200)
+    });
+    let route = Route::new("/wildcard/some_value");
+    assert!(root.match_path(&route).is_some());
+}
+
+#[test]
+fn test_match_deep_wildcard_path() {
+    let mut root = RouteNode::new();
+    root.insert(
+        &Route::new("/wildcard_deep/**"),
+        |_req: HttpRequest| async move { HttpResponse::new(200) },
+    );
+    let route = Route::new("/wildcard_deep/any/level/of/segments");
+    assert!(root.match_path(&route).is_some());
+}
+
 #[tokio::test]
 async fn test_route_json_handler() {
     let route = Route::new("/echo/{message}");

@@ -33,10 +33,11 @@ impl Handlers {
         Error: From<Args::Error>,
     {
         let entry = self.entry(method).or_default();
-        let route = crate::route::Route::new(path);
+        let route = Route::new(path);
         entry.insert(&route, handler);
     }
 
+    #[tracing::instrument(skip(self))]
     pub fn get_handler(&self, method: &Method, path: &str) -> HandlerWrapper {
         let entry = self.get(method);
 
