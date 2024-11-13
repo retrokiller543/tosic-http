@@ -6,6 +6,8 @@ description = "Proc Macros for generating endpoints when using the `tosic-http` 
 keywords = ["proc_macro", "procmacro"]
 edition = "2021"
 license = "MIT"
+repository = "https://github.com/retrokiller543/tosic-http"
+homepage = "https://github.com/retrokiller543/tosic-http"
 
 [lib]
 proc-macro = true
