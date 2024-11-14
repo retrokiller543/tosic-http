@@ -37,7 +37,7 @@ async fn test() {
     let server = HttpServerBuilder::default()
         .service_method(Method::GET, "", test_handler)
         .service(TestStructHandler)
-        .addr("0.0.0.0:0")
+        .bind("0.0.0.0:0")
         .build()
         .await;
 

@@ -10,6 +10,11 @@ pub mod json;
 pub mod path;
 pub mod query;
 
+pub use data::Data;
+pub use json::Json;
+pub use path::Path;
+pub use query::Query;
+
 #[derive(Debug, Error)]
 pub enum ExtractionError {
     #[error(transparent)]

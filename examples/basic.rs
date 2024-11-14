@@ -46,7 +46,7 @@ mod logger {
             let level = LevelFilter::INFO;
 
             #[cfg(debug_assertions)]
-            let level = LevelFilter::TRACE;
+            let level = LevelFilter::DEBUG;
 
             EnvFilter::builder()
                 .with_default_directive(level.into())
@@ -58,6 +58,7 @@ mod logger {
             .with_level(true)
             .with_target(true)
             .with_thread_names(true)
+            .with_thread_ids(true)
             .compact()
             .with_filter(filter);
 
@@ -83,6 +84,7 @@ struct TestTest {
 }
 
 #[get("/{id}/{name}")]
+#[tracing::instrument]
 async fn not_working(
     path: HttpPath<(u8, String)>,
 ) -> Result<impl Responder<Body = BoxBody>, HttpServerError> {
@@ -177,7 +179,8 @@ async fn website(req: HttpRequest, data: Data<State>) -> impl Responder<Body = B
     }
 }*/
 
-#[tokio::main]
+#[tokio::main(flavor = "multi_thread", worker_threads = 2)]
+//#[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), HttpServerError> {
     logger::init_tracing()?;
     let state = State {
@@ -186,7 +189,7 @@ async fn main() -> Result<(), HttpServerError> {
 
     let server = HttpServerBuilder::default()
         .app_state(state)
-        .addr("0.0.0.0:4221")
+        .bind("0.0.0.0:4221")
         .service_method(Method::POST, "/", test_handler)
         //.service_method(Method::GET, "/bad", not_working)
         .service(not_working)

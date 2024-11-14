@@ -1,5 +1,5 @@
 [workspace]
-members = [".", "tosic-http-macro"]
+members = [".", "examples/complete", "tosic-http-macro"]
 
 [package]
 name = "tosic-http"
@@ -39,5 +39,5 @@ default = ["log-subscriber", "gzip"]
 console-subscriber = ["dep:console-subscriber"]
 log-subscriber = ["dep:tracing-subscriber"]
 gzip = []
-tracing= []
-log = []
+utils = []
+trace = []

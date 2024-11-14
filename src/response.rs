@@ -5,6 +5,7 @@ use crate::traits::responder::Responder;
 use http::StatusCode;
 use std::fmt::Debug;
 use std::io::Write;
+use serde::Serialize;
 use tokio::io;
 
 #[derive(Clone, Debug)]
@@ -98,6 +99,20 @@ impl HttpResponse<BoxBody> {
         self.body = BoxBody::new(body);
 
         self
+    }
+
+    #[allow(non_snake_case)]
+    pub fn Ok() -> Self {
+        Self::new(200)
+    }
+
+    pub fn json<B>(mut self, data: &B) -> Self
+    where
+        B: Serialize,
+    {
+        let json = serde_json::to_string(data).expect("Unable to Serialize");
+        self.headers_mut().insert("Content-Type", "application/json".parse().unwrap());
+        self.body(json)
     }
 }
 

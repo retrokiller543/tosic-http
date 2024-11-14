@@ -1,9 +1,9 @@
 //! All credit goes to [actix-web](https://github.com/actix/actix-web) for almost all of this code.
 
-pub mod foreign_impls;
+pub(crate) mod foreign_impls;
 pub mod message_body;
-pub mod none;
-pub mod size;
+pub(crate) mod none;
+pub(crate) mod size;
 
 use crate::body::message_body::{MessageBody, MessageBodyMapErr};
 use crate::body::size::BodySize;
