@@ -7,7 +7,13 @@ use http::StatusCode;
 use crate::error::ServerError;
 use crate::extractors::ExtractionError;
 use std::io::Write;
+//message = "Implement `ResponseError` for `{Self}` to send it back as an error",
 
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` cant be sent back as an error when used as a Handler",
+    label = "Implement `ResponseError` for `{Self}` to send it back as an error",
+    note = "any type that implements the trait `ResponseError` can be used as a result like this `Result<impl Responder<Body = BoxBody>, {Self}>`"
+)]
 pub trait ResponseError: std::fmt::Debug + std::fmt::Display + Send {
     fn status_code(&self) -> StatusCode {
         StatusCode::INTERNAL_SERVER_ERROR

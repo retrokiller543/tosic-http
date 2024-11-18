@@ -1,24 +1,20 @@
 use crate::route::HandlerFn;
-use std::collections::HashMap;
-use std::sync::Arc;
+use std::collections::BTreeMap;
 
-pub struct HandlerWrapper(
-    pub(crate) Arc<HandlerFn>,
-    pub(crate) HashMap<String, String>,
-);
+pub struct HandlerWrapper(pub(crate) HandlerFn, pub(crate) BTreeMap<String, String>);
 
 impl HandlerWrapper {
-    pub fn handler(&self) -> Arc<HandlerFn> {
+    pub fn handler(&self) -> HandlerFn {
         self.0.clone()
     }
 
-    pub fn params(&self) -> &HashMap<String, String> {
+    pub fn params(&self) -> &BTreeMap<String, String> {
         &self.1
     }
 }
 
-impl From<(Arc<HandlerFn>, HashMap<String, String>)> for HandlerWrapper {
-    fn from(value: (Arc<HandlerFn>, HashMap<String, String>)) -> Self {
+impl From<(HandlerFn, BTreeMap<String, String>)> for HandlerWrapper {
+    fn from(value: (HandlerFn, BTreeMap<String, String>)) -> Self {
         Self(value.0, value.1)
     }
 }

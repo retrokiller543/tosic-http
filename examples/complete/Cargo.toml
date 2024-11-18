@@ -1,0 +1,15 @@
+[package]
+name = "complete"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tosic-http = { path = "../..", version = "0.0.1" }
+fake = { version = "3.0.1", features = ["derive"] }
+serde = { version = "1.0.214", features = ["derive"] }
+thiserror = "2.0.3"
+tokio = { version = "1.41.1", features = ["full"] }
+tracing = "0.1.40"
+tracing-subscriber = "0.3.18"
+rng = "0.1.0"
+tower = { version =  "0.5.1", features = ["full"] }

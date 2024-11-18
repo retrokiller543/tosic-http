@@ -72,7 +72,7 @@ pub(crate) fn service(
         }
 
         impl #crate_name::services::HttpService<(#(#types,)*)> for #fn_name {
-            const METHOD: http::Method = http::Method::#method_ident;
+            const METHOD: #crate_name::prelude::Method = #crate_name::prelude::Method::#method_ident;
             const PATH: &'static str = #args;
         }
     };

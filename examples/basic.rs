@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 #![feature(impl_trait_in_assoc_type)]
 
 use http::Method;
@@ -5,9 +6,10 @@ use serde::Deserialize;
 use thiserror::Error;
 use tokio::io;
 use tosic_http::body::BoxBody;
+use tosic_http::error::response_error::ResponseError;
 use tosic_http::extractors::json::Json;
+use tosic_http::extractors::path::Path as HttpPath;
 use tosic_http::extractors::query::Query;
-use tosic_http::request::HttpRequest;
 use tosic_http::response::HttpResponse;
 use tosic_http::server::builder::HttpServerBuilder;
 use tosic_http::traits::responder::Responder;
@@ -21,6 +23,8 @@ enum HttpServerError {
     #[error(transparent)]
     Io(#[from] io::Error),
 }
+
+impl ResponseError for HttpServerError {}
 
 mod logger {
     use crate::HttpServerError;
@@ -42,7 +46,7 @@ mod logger {
             let level = LevelFilter::INFO;
 
             #[cfg(debug_assertions)]
-            let level = LevelFilter::TRACE;
+            let level = LevelFilter::DEBUG;
 
             EnvFilter::builder()
                 .with_default_directive(level.into())
@@ -54,6 +58,7 @@ mod logger {
             .with_level(true)
             .with_target(true)
             .with_thread_names(true)
+            .with_thread_ids(true)
             .compact()
             .with_filter(filter);
 
@@ -72,10 +77,20 @@ mod logger {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 struct TestTest {
     username: String,
     password: String,
+}
+
+#[get("/{id}/{name}")]
+#[tracing::instrument]
+async fn not_working(
+    path: HttpPath<(u8, String)>,
+) -> Result<impl Responder<Body = BoxBody>, HttpServerError> {
+    let (id, name) = path.into_inner();
+
+    Ok(HttpResponse::new(200).body((id.to_string(), name)))
 }
 
 async fn test_handler(
@@ -99,28 +114,87 @@ async fn test_fn() -> impl Responder<Body = BoxBody> {
     "hello testing world"
 }
 
-#[get("/**")]
-async fn website(req: HttpRequest) -> impl Responder<Body = BoxBody> {
-    let file = req.params().get("wildcard_deep");
+struct State {
+    dir: String,
+}
 
-    if let Some(path) = file {
-        let body = BoxBody::new(path.clone());
+/*#[get("**")]
+#[tracing::instrument]
+async fn website(req: HttpRequest, data: Data<State>) -> impl Responder<Body = BoxBody> {
+    const DEFAULT_URL: &str = "index.html";
+    let base_path = data.0.dir.clone();
 
-        HttpResponse::new(200).set_body(body)
+    let file = match req.params().get("wildcard_deep") {
+        Some(path) => {
+            let path = Path::new(path);
+
+            if path.starts_with("static.files") {
+                // append ../
+                path.to_path_buf()
+            } else {
+                path.to_path_buf()
+            }
+        }
+        None => Path::new(DEFAULT_URL).to_path_buf(),
+    };
+
+    let path = Path::new(&base_path).join(file);
+
+    dbg!(&path);
+
+    if path.exists() {
+        let content_type = if let Some(ext) = path.extension() {
+            match ext.to_str().unwrap() {
+                "html" => "text/html",
+                "css" => "text/css",
+                _ => "application/octet-stream",
+            }
+        } else {
+            "text/plain"
+        };
+
+        let mut file = match File::open(path).await {
+            Ok(f) => f,
+            Err(err) => panic!("Error reading file {:?}", err),
+        };
+
+        let mut buffer = Vec::new();
+
+        file.read_to_end(&mut buffer)
+            .await
+            .expect("TODO: panic message");
+        file.flush().await.expect("TODO: panic message flush");
+
+        let body = BoxBody::new(buffer);
+
+        let mut response = HttpResponse::new(200);
+
+        response
+            .headers_mut()
+            .insert(http::header::CONTENT_TYPE, content_type.parse().unwrap());
+
+        response.set_body(body)
     } else {
         HttpResponse::new(404)
     }
-}
+}*/
 
-#[tokio::main]
+#[tokio::main(flavor = "multi_thread", worker_threads = 2)]
+//#[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), HttpServerError> {
     logger::init_tracing()?;
+    let state = State {
+        dir: "/Users/emil/projects/tosic-http/target/doc".to_string(),
+    };
 
     let server = HttpServerBuilder::default()
-        .addr("0.0.0.0:4221")
+        .app_state(state)
+        .bind("0.0.0.0:4221")
         .service_method(Method::POST, "/", test_handler)
+        //.service_method(Method::GET, "/bad", not_working)
+        .service(not_working)
         .service(test_fn)
-        .service(website)
+        //.service(website)
         .build()
         .await?;
 

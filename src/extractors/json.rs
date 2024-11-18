@@ -30,6 +30,7 @@ impl<V: DeserializeOwned> FromRequest for Json<V> {
 }
 
 impl<T> Json<T> {
+    #[inline]
     pub fn into_inner(self) -> T {
         self.0
     }
@@ -38,12 +39,14 @@ impl<T> Json<T> {
 impl<T> std::ops::Deref for Json<T> {
     type Target = T;
 
+    #[inline]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
 impl<T> std::ops::DerefMut for Json<T> {
+    #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }

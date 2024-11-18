@@ -1,15 +1,14 @@
 use crate::body::BoxBody;
-use crate::error::response_error::ResponseError;
 use crate::response::HttpResponse;
 use http::{HeaderMap, Response};
-use std::convert::Infallible;
 use std::fmt;
 use std::fmt::Debug;
 use thiserror::Error;
 
 mod foreign_impls;
-pub mod macros;
+pub(crate) mod macros;
 pub mod response_error;
+pub use response_error::ResponseError;
 
 #[derive(Debug, Error)]
 pub enum ServerError {
@@ -41,6 +40,8 @@ pub enum ServerError {
     PartialParsed,
     #[error("Invalid encoding for request")]
     InvalidEncoding,
+    #[error("Failed to construct the service")]
+    ServiceConstructionFailed,
 }
 
 pub struct Error {
@@ -124,11 +125,5 @@ impl From<HttpResponse> for Response<BoxBody> {
         }
 
         response.body(value.body).unwrap()
-    }
-}
-
-impl From<Infallible> for Error {
-    fn from(value: Infallible) -> Self {
-        match value {}
     }
 }
