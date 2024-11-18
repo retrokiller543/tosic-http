@@ -1,5 +1,5 @@
 [workspace]
-members = [".", "examples/complete", "tosic-http-macro"]
+members = [".", "benchmarks/actix-web-bench", "benchmarks/axum-bench", "benchmarks/tosic-http-bench", "examples/complete", "tosic-http-macro"]
 
 [package]
 name = "tosic-http"

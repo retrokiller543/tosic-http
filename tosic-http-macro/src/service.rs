@@ -52,11 +52,13 @@ pub(crate) fn service(
         .cloned() // Clone since we will use the attribute in a new place
         .collect();
 
+    let vis = &input.vis;
+
     // Expand the macro to generate the desired output code
     let expanded: TokenStream2 = quote! {
         #[allow(non_camel_case_types)]
         #(#doc_attrs)*
-        struct #fn_name;
+        #vis struct #fn_name;
 
         impl #crate_name::traits::handler::Handler<(#(#types,)*)> for #fn_name
         {
