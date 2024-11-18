@@ -1,23 +1,25 @@
 #![feature(impl_trait_in_assoc_type)]
 
+use fake::faker::{filesystem::en::Semver, internet::en::MACAddress};
+use fake::{Dummy, Fake, Faker};
+use serde::{Deserialize, Serialize};
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
 use std::time::Duration;
-use fake::faker::{filesystem::en::Semver, internet::en::MACAddress};
-use fake::{Dummy, Fake, Faker};
-use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use tokio::io;
-use tower::layer::util::Identity;
-use tower::{Layer, Service};
-use tosic_http::prelude::{get, HttpRequest, HttpPayload, HttpResponse, Method, HttpServer, CompressionLayer};
-use tosic_http::server::builder::HttpServerBuilder;
-use tracing::dispatcher::SetGlobalDefaultError;
-use tower::timeout::TimeoutLayer;
-use tracing::{error, info};
 use tosic_http::error::Error;
+use tosic_http::prelude::{
+    get, CompressionLayer, HttpPayload, HttpRequest, HttpResponse, HttpServer, Method,
+};
+use tosic_http::server::builder::HttpServerBuilder;
+use tower::layer::util::Identity;
+use tower::timeout::TimeoutLayer;
+use tower::{Layer, Service};
+use tracing::dispatcher::SetGlobalDefaultError;
+use tracing::{error, info};
 
 mod logger;
 
@@ -28,7 +30,10 @@ pub struct LoggingMiddleware<S> {
 
 impl<S> Service<(HttpRequest, HttpPayload)> for LoggingMiddleware<S>
 where
-    S: Service<(HttpRequest, HttpPayload), Response = HttpResponse, Error = Error> + Send + Sync + 'static,
+    S: Service<(HttpRequest, HttpPayload), Response = HttpResponse, Error = Error>
+        + Send
+        + Sync
+        + 'static,
     S::Future: Send + 'static,
 {
     type Response = HttpResponse;

@@ -1,15 +1,15 @@
+use crate::body::message_body::MessageBody;
+use crate::body::BoxBody;
+use crate::error::ServerError;
+use crate::prelude::{Error, HttpPayload, HttpRequest, HttpResponse};
+use flate2::write::{DeflateEncoder, GzEncoder};
+use flate2::Compression;
 use std::future::Future;
 use std::io::Write;
 use std::pin::Pin;
 use std::task::{Context, Poll};
-use flate2::Compression;
-use flate2::write::{DeflateEncoder, GzEncoder};
 use tower::{Layer, Service};
 use tracing::warn;
-use crate::body::BoxBody;
-use crate::body::message_body::MessageBody;
-use crate::error::ServerError;
-use crate::prelude::{Error, HttpPayload, HttpRequest, HttpResponse};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CompressionType {
@@ -19,6 +19,12 @@ pub enum CompressionType {
 
 #[derive(Clone, Debug)]
 pub struct CompressionLayer;
+
+impl Default for CompressionLayer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl CompressionLayer {
     pub fn new() -> Self {
@@ -42,10 +48,10 @@ pub struct CompressionMiddleware<S: Clone> {
 impl<S> Service<(HttpRequest, HttpPayload)> for CompressionMiddleware<S>
 where
     S: Service<(HttpRequest, HttpPayload), Response = HttpResponse, Error = Error>
-    + Clone
-    + Send
-    + Sync
-    + 'static,
+        + Clone
+        + Send
+        + Sync
+        + 'static,
     S::Future: Send + 'static,
 {
     type Response = HttpResponse;

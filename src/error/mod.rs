@@ -41,7 +41,6 @@ pub enum ServerError {
     #[error("Invalid encoding for request")]
     InvalidEncoding,
     #[error("Failed to construct the service")]
-
     ServiceConstructionFailed,
 }
 

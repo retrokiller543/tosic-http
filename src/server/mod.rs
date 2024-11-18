@@ -11,7 +11,7 @@ use tokio::io::BufReader;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::ToSocketAddrs;
 use tower::layer::util::Identity;
-use tower::{Layer, Service, ServiceExt, ServiceBuilder};
+use tower::{Layer, Service, ServiceBuilder, ServiceExt};
 #[cfg(feature = "trace")]
 use tracing::trace;
 use tracing::{debug, error, info};
@@ -35,10 +35,12 @@ where
 impl<L> HttpServer<L>
 where
     L: Layer<HandlerFn> + Clone + Send + 'static,
-    L::Service: Service<(HttpRequest, HttpPayload), Response = HttpResponse, Error = Error> + Send + 'static,
+    L::Service: Service<(HttpRequest, HttpPayload), Response = HttpResponse, Error = Error>
+        + Send
+        + 'static,
     <L::Service as Service<(HttpRequest, HttpPayload)>>::Future: Send + 'static,
 {
-    #[cfg_attr(feature = "trace", tracing::instrument(level = "trace"))]
+    #[cfg_attr(feature = "trace", tracing::instrument(level = "trace", skip(service_builder)))]
     /// Create a new [`HttpServer`] instance and binds the server to the provided address.
     ///
     /// This meant to be called from [`HttpServerBuilder`] and not externally
@@ -46,7 +48,7 @@ where
         addr: T,
         handlers: Handlers,
         app_state: State,
-        service_builder: ServiceBuilder<L>
+        service_builder: ServiceBuilder<L>,
     ) -> io::Result<Self> {
         let listener = tokio::net::TcpListener::bind(addr).await?;
 
@@ -57,13 +59,12 @@ where
             listener,
             handlers,
             app_state,
-            service_builder
+            service_builder,
         })
     }
 
     /// Returns a new [`HttpServerBuilder`] for configuring and building an [`HttpServer`].
-    pub fn builder<T: ToSocketAddrs + Default + Debug + Clone>(
-    ) -> HttpServerBuilder<T , Identity> {
+    pub fn builder<T: ToSocketAddrs + Default + Debug + Clone>() -> HttpServerBuilder<T, Identity> {
         HttpServerBuilder::<T, Identity>::new()
     }
 
@@ -98,7 +99,9 @@ where
         let service_builder = self.service_builder.clone();
 
         tokio::spawn(async move {
-            if let Err(e) = Self::handle_connection(stream, socket, handlers, state, service_builder).await {
+            if let Err(e) =
+                Self::handle_connection(stream, socket, handlers, state, service_builder).await
+            {
                 error!("Error handling connection from {}: {:?}", socket, e);
             }
         });
@@ -158,11 +161,11 @@ where
         debug!("Request: {:?}", request);
 
         /*let response = Self::process_request(handler.0, request, payload)
-            .await
-            .unwrap_or_else(|e| {
-                error!("Failed to process request: {}", e);
-                e.error_response()
-            });*/
+        .await
+        .unwrap_or_else(|e| {
+            error!("Failed to process request: {}", e);
+            e.error_response()
+        });*/
 
         let response = service.call((request, payload)).await.unwrap_or_else(|e| {
             error!("Failed to process request: {}", e);

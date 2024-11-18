@@ -13,12 +13,12 @@ use std::future::Future;
 use tokio::io;
 use tokio::net::ToSocketAddrs;
 
+use crate::prelude::{HttpPayload, HttpRequest, HttpResponse};
+use crate::route::HandlerFn;
 #[allow(unused_imports)]
 use std::any::TypeId;
 use tower::layer::util::{Identity, Stack};
 use tower::{Layer, Service, ServiceBuilder};
-use crate::prelude::{HttpPayload, HttpRequest, HttpResponse};
-use crate::route::HandlerFn;
 
 #[derive(Debug, Clone)]
 /// [`HttpServerBuilder`] is a builder for configuring and initializing an [`HttpServer`].
@@ -26,12 +26,12 @@ use crate::route::HandlerFn;
 pub struct HttpServerBuilder<T, L>
 where
     T: ToSocketAddrs + Default + Clone,
-    L: Layer<HandlerFn> + Clone + Send + 'static
+    L: Layer<HandlerFn> + Clone + Send + 'static,
 {
     addr: Option<T>,
     handlers: Handlers,
     app_state: State,
-    service_builder: ServiceBuilder<L>
+    service_builder: ServiceBuilder<L>,
 }
 
 impl<T: ToSocketAddrs + Default + Debug + Clone> Default for HttpServerBuilder<T, Identity> {
@@ -51,11 +51,13 @@ impl<T: ToSocketAddrs + Default + Debug + Clone> HttpServerBuilder<T, Identity> 
     }
 }
 
-impl<T, L> HttpServerBuilder<T , L>
+impl<T, L> HttpServerBuilder<T, L>
 where
     T: ToSocketAddrs + Default + Debug + Clone,
     L: Layer<HandlerFn> + Clone + Send + 'static,
-    L::Service: Service<(HttpRequest, HttpPayload), Response = HttpResponse, Error = Error> + Send + 'static,
+    L::Service: Service<(HttpRequest, HttpPayload), Response = HttpResponse, Error = Error>
+        + Send
+        + 'static,
     <L::Service as Service<(HttpRequest, HttpPayload)>>::Future: Send + 'static,
 {
     /// Adds shared application state to be accessible in request handlers.
@@ -202,19 +204,19 @@ where
         HttpServer::new(addr, self.handlers, self.app_state, self.service_builder).await
     }
 
-     /// Wraps a layer in the stack.
-     ///
-     /// A layer is a middleware that can modify the request and response.
-     pub fn wrap<S>(self, layer: S) -> HttpServerBuilder<T, Stack<S, L>>
-     where
-         S: Layer<HandlerFn> + Clone + Send + 'static,
-         L: Layer<S::Service> + Clone + Send + 'static,
-     {
-         HttpServerBuilder {
-             addr: self.addr,
-             handlers: self.handlers,
-             app_state: self.app_state,
-             service_builder: self.service_builder.layer(layer),
-         }
-     }
+    /// Wraps a layer in the stack.
+    ///
+    /// A layer is a middleware that can modify the request and response.
+    pub fn wrap<S>(self, layer: S) -> HttpServerBuilder<T, Stack<S, L>>
+    where
+        S: Layer<HandlerFn> + Clone + Send + 'static,
+        L: Layer<S::Service> + Clone + Send + 'static,
+    {
+        HttpServerBuilder {
+            addr: self.addr,
+            handlers: self.handlers,
+            app_state: self.app_state,
+            service_builder: self.service_builder.layer(layer),
+        }
+    }
 }
