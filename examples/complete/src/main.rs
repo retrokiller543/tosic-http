@@ -5,21 +5,17 @@ use fake::{Dummy, Fake, Faker};
 use serde::{Deserialize, Serialize};
 use std::future::Future;
 use std::pin::Pin;
-use std::sync::Arc;
 use std::task::{Context, Poll};
-use std::time::Duration;
 use thiserror::Error;
 use tokio::io;
 use tosic_http::error::Error;
 use tosic_http::prelude::{
-    get, CompressionLayer, HttpPayload, HttpRequest, HttpResponse, HttpServer, Method,
+    get, CompressionLayer, HttpPayload, HttpRequest, HttpResponse, HttpServer,
 };
-use tosic_http::server::builder::HttpServerBuilder;
 use tower::layer::util::Identity;
-use tower::timeout::TimeoutLayer;
 use tower::{Layer, Service};
 use tracing::dispatcher::SetGlobalDefaultError;
-use tracing::{error, info};
+use tracing::{debug, error};
 
 mod logger;
 
@@ -41,30 +37,23 @@ where
     type Future = Pin<Box<dyn Future<Output = Result<HttpResponse, Error>> + Send>>;
 
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        // Ensure the inner service is ready to accept a request
         self.inner.poll_ready(cx)
     }
 
     fn call(&mut self, req: (HttpRequest, HttpPayload)) -> Self::Future {
-        //let mut inner = self.inner.clone();
         let method = req.0.method().clone();
         let uri = req.0.uri().clone();
-
-        info!("Incoming request: {} {}", method, uri);
 
         let fut = self.inner.call(req);
 
         Box::pin(async move {
-            // Log the incoming request
-            info!("Incoming request: {} {}", method, uri);
+            debug!("Incoming request: {} {}", method, uri);
 
-            // Call the inner service
             let response = fut.await;
 
-            // Log the response or error
             match &response {
                 Ok(res) => {
-                    info!("Response: {:?}", res);
+                    debug!("Response: {:?}", res);
                 }
                 Err(err) => {
                     error!("Error handling request: {}", err);
@@ -105,7 +94,7 @@ pub struct Device {
     pub firmware: String,
 }
 
-//#[get("/api/devices")]
+#[get("/api/devices")]
 async fn devices() -> HttpResponse {
     let devices: Vec<Device> = Faker.fake();
 
@@ -120,7 +109,7 @@ async fn main() -> Result<(), HttpServerError> {
         .wrap(CompressionLayer)
         .wrap(LoggingLayer)
         .bind("0.0.0.0:4221")
-        .service_method(Method::GET, "/api/devices", devices)
+        .service(devices)
         .build()
         .await?;
 

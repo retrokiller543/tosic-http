@@ -6,6 +6,8 @@ use crate::route::HandlerFn;
 use crate::server::builder::HttpServerBuilder;
 use crate::state::State;
 use std::fmt::Debug;
+use bytes::Bytes;
+use http::HeaderMap;
 use tokio::io;
 use tokio::io::BufReader;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -15,6 +17,7 @@ use tower::{Layer, Service, ServiceBuilder, ServiceExt};
 #[cfg(feature = "trace")]
 use tracing::trace;
 use tracing::{debug, error, info};
+use crate::body::message_body::MessageBody;
 
 pub mod builder;
 mod test;
@@ -158,59 +161,32 @@ where
             }
         };
 
-        debug!("Request: {:?}", request);
-
-        /*let response = Self::process_request(handler.0, request, payload)
-        .await
-        .unwrap_or_else(|e| {
-            error!("Failed to process request: {}", e);
-            e.error_response()
-        });*/
-
         let response = service.call((request, payload)).await.unwrap_or_else(|e| {
             error!("Failed to process request: {}", e);
             e.error_response()
         });
 
-        debug!("Response: {:?}", response);
-
         Self::send_response(reader, response).await
     }
-
-    /*#[cfg_attr(feature = "trace", tracing::instrument(level = "trace", skip_all))]
-    /// Processes the request and returns the response
-    async fn process_request(
-        service: HandlerFn,
-        request: HttpRequest,
-        mut payload: HttpPayload,
-    ) -> Result<HttpResponse, Error> {
-        let preprocessed_request = Self::pre_process_request(&request).await?;
-        let response: HttpResponse = service.call((preprocessed_request, &mut payload)).await?;
-        let post_processed_response = Self::post_process_request(response).await?;
-
-        Ok(post_processed_response)
-    }
-
-    #[cfg_attr(feature = "trace", tracing::instrument(level = "trace", skip_all))]
-    /// Processes the request before passing it to the handler
-    async fn pre_process_request(request: &HttpRequest) -> Result<HttpRequest, Error> {
-        // TODO: add logic to run middleware here, this is just a mock at the moment of how the structure could look like but its unclear if this is the right solution
-        Ok(request.clone())
-    }
-
-    #[cfg_attr(feature = "trace", tracing::instrument(level = "trace", skip_all))]
-    /// Processes the response we got from the handler before returning it to the client
-    async fn post_process_request(response: HttpResponse) -> Result<HttpResponse, Error> {
-        // TODO: add logic to run middleware here, this is just a mock at the moment of how the structure could look like but its unclear if this is the right solution
-        Ok(response)
-    }*/
 
     #[cfg_attr(feature = "trace", tracing::instrument(level = "trace", skip(reader)))]
     /// Sends the response back to the client
     async fn send_response(
         reader: BufReader<tokio::net::TcpStream>,
-        response: HttpResponse,
+        mut response: HttpResponse,
     ) -> Result<(), ServerError> {
+        let content_length = response.body
+            .clone()
+            .try_into_bytes()
+            .unwrap_or(Bytes::new())
+            .len() as u64;
+
+        Self::insert_content_length(response.headers_mut(), content_length);
+
+        response
+            .headers_mut()
+            .insert("Connection", "close".parse()?);
+
         let response_bytes = response.to_bytes()?;
 
         let mut stream = reader.into_inner();
@@ -218,6 +194,10 @@ where
         stream.flush().await?;
 
         Ok(())
+    }
+
+    fn insert_content_length(headers: &mut HeaderMap, content_length: u64) {
+        headers.insert("Content-Length", content_length.to_string().parse().unwrap());
     }
 
     #[cfg_attr(feature = "trace", tracing::instrument(level = "trace", skip(reader)))]
