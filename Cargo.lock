@@ -1426,7 +1426,7 @@ dependencies = [
 
 [[package]]
 name = "tosic-http"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "bytes",
  "clap",
@@ -1452,7 +1452,7 @@ dependencies = [
 
 [[package]]
 name = "tosic-http-macro"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "darling",
  "proc-macro2",

@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-tosic-http = { path = "../..", version = "0.0.1" }
+tosic-http = { path = "../.." }
 fake = { version = "3.0.1", features = ["derive"] }
 serde = { version = "1.0.214", features = ["derive"] }
 thiserror = "2.0.3"
