@@ -3,9 +3,9 @@ use crate::body::BoxBody;
 use crate::request::HttpRequest;
 use crate::traits::responder::Responder;
 use http::StatusCode;
+use serde::Serialize;
 use std::fmt::Debug;
 use std::io::Write;
-use serde::Serialize;
 use tokio::io;
 
 #[derive(Clone, Debug)]
@@ -45,7 +45,7 @@ impl HttpResponse<BoxBody> {
         Self { body, ..self }
     }
 
-    pub fn to_bytes(&self) -> io::Result<Vec<u8>> {
+    pub(crate) fn to_bytes(&self) -> io::Result<Vec<u8>> {
         let mut response_bytes = Vec::new();
 
         let status_line = format!(
@@ -80,12 +80,15 @@ impl HttpResponse<BoxBody> {
     /// Sending tuples as the body is supported, but it's important to note that the layout of tuple elements may be unpredictable when serialized to bytes, as Rust does not guarantee element ordering in tuples.
     ///
     /// # Parameters
+    ///
     /// - `body`: The body content to be set for the response, implementing [`MessageBody`] and [`Clone`].
     ///
     /// # Returns
+    ///
     /// Returns `Self`, allowing for method chaining.
     ///
     /// # Example
+    ///
     /// ```
     /// # use tosic_http::response::HttpResponse;
     ///
@@ -111,7 +114,8 @@ impl HttpResponse<BoxBody> {
         B: Serialize,
     {
         let json = serde_json::to_string(data).expect("Unable to Serialize");
-        self.headers_mut().insert("Content-Type", "application/json".parse().unwrap());
+        self.headers_mut()
+            .insert("Content-Type", "application/json".parse().unwrap());
         self.body(json)
     }
 }

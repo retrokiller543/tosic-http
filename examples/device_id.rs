@@ -3,10 +3,10 @@
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use tokio::io;
-use tracing::dispatcher::SetGlobalDefaultError;
 use tosic_http::prelude::HttpResponse;
 use tosic_http::server::builder::HttpServerBuilder;
 use tosic_http_macro::get;
+use tracing::dispatcher::SetGlobalDefaultError;
 
 mod logger {
     use crate::HttpServerError;

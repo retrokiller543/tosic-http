@@ -1,19 +1,20 @@
-use std::fmt::Debug;
 use crate::error::{Error, ServerError};
 use crate::handlers::Handlers;
 use crate::request::{HttpPayload, HttpRequest};
 use crate::response::HttpResponse;
 use crate::route::HandlerFn;
+use crate::server::builder::HttpServerBuilder;
 use crate::state::State;
-use std::sync::Arc;
+use std::fmt::Debug;
 use tokio::io;
 use tokio::io::BufReader;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::ToSocketAddrs;
-use tracing::{debug, error, info};
+use tower::layer::util::Identity;
+use tower::{Layer, Service, ServiceExt, ServiceBuilder};
 #[cfg(feature = "trace")]
 use tracing::trace;
-use crate::server::builder::HttpServerBuilder;
+use tracing::{debug, error, info};
 
 pub mod builder;
 mod test;
@@ -21,13 +22,22 @@ mod test;
 /// Represents a running HTTP server.
 ///
 /// To construct a server, use [`HttpServer::builder`] or the builder struct directly [`HttpServerBuilder`].
-pub struct HttpServer {
+pub struct HttpServer<L>
+where
+    L: Layer<HandlerFn> + Clone + Send + 'static,
+{
     listener: tokio::net::TcpListener,
     handlers: Handlers,
     app_state: State,
+    service_builder: ServiceBuilder<L>,
 }
 
-impl HttpServer {
+impl<L> HttpServer<L>
+where
+    L: Layer<HandlerFn> + Clone + Send + 'static,
+    L::Service: Service<(HttpRequest, HttpPayload), Response = HttpResponse, Error = Error> + Send + 'static,
+    <L::Service as Service<(HttpRequest, HttpPayload)>>::Future: Send + 'static,
+{
     #[cfg_attr(feature = "trace", tracing::instrument(level = "trace"))]
     /// Create a new [`HttpServer`] instance and binds the server to the provided address.
     ///
@@ -36,6 +46,7 @@ impl HttpServer {
         addr: T,
         handlers: Handlers,
         app_state: State,
+        service_builder: ServiceBuilder<L>
     ) -> io::Result<Self> {
         let listener = tokio::net::TcpListener::bind(addr).await?;
 
@@ -46,12 +57,14 @@ impl HttpServer {
             listener,
             handlers,
             app_state,
+            service_builder
         })
     }
 
     /// Returns a new [`HttpServerBuilder`] for configuring and building an [`HttpServer`].
-    pub fn builder<T: ToSocketAddrs + Default + Debug + Clone>() -> HttpServerBuilder<T> {
-        HttpServerBuilder::new()
+    pub fn builder<T: ToSocketAddrs + Default + Debug + Clone>(
+    ) -> HttpServerBuilder<T , Identity> {
+        HttpServerBuilder::<T, Identity>::new()
     }
 
     /// Starts the server and listens for incoming connections.
@@ -82,9 +95,10 @@ impl HttpServer {
     ) -> Result<(), ServerError> {
         let handlers = self.handlers.clone();
         let state = self.app_state.clone();
+        let service_builder = self.service_builder.clone();
 
         tokio::spawn(async move {
-            if let Err(e) = Self::handle_connection(stream, socket, handlers, state).await {
+            if let Err(e) = Self::handle_connection(stream, socket, handlers, state, service_builder).await {
                 error!("Error handling connection from {}: {:?}", socket, e);
             }
         });
@@ -99,6 +113,7 @@ impl HttpServer {
         socket: std::net::SocketAddr,
         handlers: Handlers,
         state: State,
+        service_builder: ServiceBuilder<L>,
     ) -> Result<(), ServerError> {
         #[cfg(feature = "trace")]
         trace!("Accepted connection from {}", socket);
@@ -130,29 +145,44 @@ impl HttpServer {
 
         request.params_mut().extend(handler.1.clone());
 
+        let mut service = service_builder.service(handler.handler());
+
+        match service.ready().await {
+            Ok(_) => {}
+            Err(e) => {
+                error!("Failed to construct service: {}", e);
+                return Err(ServerError::ServiceConstructionFailed);
+            }
+        };
+
         debug!("Request: {:?}", request);
 
-        let response = Self::process_request(handler.0, request, payload)
+        /*let response = Self::process_request(handler.0, request, payload)
             .await
             .unwrap_or_else(|e| {
                 error!("Failed to process request: {}", e);
                 e.error_response()
-            });
+            });*/
+
+        let response = service.call((request, payload)).await.unwrap_or_else(|e| {
+            error!("Failed to process request: {}", e);
+            e.error_response()
+        });
 
         debug!("Response: {:?}", response);
 
         Self::send_response(reader, response).await
     }
 
-    #[cfg_attr(feature = "trace", tracing::instrument(level = "trace", skip_all))]
+    /*#[cfg_attr(feature = "trace", tracing::instrument(level = "trace", skip_all))]
     /// Processes the request and returns the response
     async fn process_request(
-        handler: Arc<HandlerFn>,
+        service: HandlerFn,
         request: HttpRequest,
         mut payload: HttpPayload,
     ) -> Result<HttpResponse, Error> {
         let preprocessed_request = Self::pre_process_request(&request).await?;
-        let response: HttpResponse = handler.call((preprocessed_request, &mut payload)).await?;
+        let response: HttpResponse = service.call((preprocessed_request, &mut payload)).await?;
         let post_processed_response = Self::post_process_request(response).await?;
 
         Ok(post_processed_response)
@@ -170,7 +200,7 @@ impl HttpServer {
     async fn post_process_request(response: HttpResponse) -> Result<HttpResponse, Error> {
         // TODO: add logic to run middleware here, this is just a mock at the moment of how the structure could look like but its unclear if this is the right solution
         Ok(response)
-    }
+    }*/
 
     #[cfg_attr(feature = "trace", tracing::instrument(level = "trace", skip(reader)))]
     /// Sends the response back to the client

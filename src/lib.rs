@@ -13,6 +13,7 @@ pub mod futures;
 #[cfg(not(feature = "utils"))]
 pub(crate) mod futures;
 pub(crate) mod handlers;
+pub mod prelude;
 pub mod request;
 pub mod response;
 pub(crate) mod route;
@@ -21,4 +22,4 @@ pub mod services;
 pub(crate) mod state;
 pub mod traits;
 pub(crate) mod utils;
-pub mod prelude;
+mod middleware;

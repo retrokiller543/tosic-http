@@ -6,25 +6,77 @@ use std::borrow::Cow;
 use std::collections::{BTreeMap, HashMap};
 use std::fmt::Debug;
 use std::future::Future;
+use std::ops::{Deref, DerefMut};
 use std::pin::Pin;
 use std::sync::Arc;
+use std::task::{Context, Poll};
+use tower::Service;
 //use crate::handlers::HandlerType;
 use super::{PathSegment, Route};
 use crate::traits::from_request::FromRequest;
 use crate::traits::handler::Handler;
 use crate::traits::responder::Responder;
 
-pub(crate) type HandlerFn = dyn Fn(
+#[derive(Clone)]
+pub struct HandlerFn(Arc<HandlerInner>);
+
+impl HandlerFn {
+    pub(crate) fn wrap<H, Args>(handler: H) -> HandlerFn
+    where
+        H: Handler<Args> + Send + Sync + 'static,
+        Args: FromRequest + Send + 'static,
+        Args::Future: Future + Send + 'static,
+        H::Future: Future + Send + 'static,
+        H::Output: Responder<Body = BoxBody> + 'static,
+        Error: From<Args::Error>,
+    {
+        Self(wrap_handler_fn(Arc::new(handler)))
+    }
+}
+
+impl Deref for HandlerFn {
+    type Target = Arc<HandlerInner>;
+
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for HandlerFn {
+    #[inline]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+pub(crate) type HandlerInner = dyn Fn(
         HttpRequest,
         &mut HttpPayload,
     ) -> Pin<Box<dyn Future<Output = Result<HttpResponse, Error>> + Send>>
     + Send
     + Sync;
 
+impl Service<(HttpRequest, HttpPayload)> for HandlerFn {
+    type Response = HttpResponse;
+    type Error = Error;
+    type Future = Pin<Box<dyn Future<Output = Result<HttpResponse, Error>> + Send>>;
+
+    #[inline]
+    fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        Poll::Ready(Ok(()))
+    }
+
+    #[inline]
+    fn call(&mut self, mut req: (HttpRequest, HttpPayload)) -> Self::Future {
+        self.0(req.0, &mut req.1)
+    }
+}
+
 unsafe impl Send for HttpPayload {}
 unsafe impl Send for BoxBody {}
 
-pub(crate) fn wrap_handler_fn<H, Args>(handler: Arc<H>) -> Arc<HandlerFn>
+pub(crate) fn wrap_handler_fn<H, Args>(handler: Arc<H>) -> Arc<HandlerInner>
 where
     H: Handler<Args> + Send + Sync + 'static,
     Args: FromRequest + Send + 'static,
@@ -34,6 +86,7 @@ where
     Error: From<Args::Error>,
 {
     Arc::new(
+        #[inline]
         move |req: HttpRequest,
               payload: &mut HttpPayload|
               -> Pin<Box<dyn Future<Output = Result<HttpResponse, Error>> + Send>> {
@@ -43,15 +96,13 @@ where
             let mut payload = payload.clone();
 
             Box::pin(async move {
-                // Extract arguments from the request
                 let args = Args::from_request(&req, &mut payload).await?;
-                // Call the handler with the extracted arguments
                 let res = handler.call(args).await;
-                // Convert the handler's output into a response
+
                 Ok(res.respond_to(&req))
             })
         },
-    ) as Arc<HandlerFn>
+    ) as Arc<HandlerInner>
 }
 
 #[derive(Clone)]
@@ -59,11 +110,17 @@ pub struct RouteNode {
     static_children: HashMap<Cow<'static, str>, RouteNode>,
     parameter_child: Option<(Cow<'static, str>, Box<RouteNode>)>,
     wildcard_child: Option<Box<RouteNode>>,
-    handler: Option<Arc<HandlerFn>>,
+    handler: Option<HandlerFn>,
 }
 
 impl Debug for RouteNode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        #[derive(Debug)]
+        enum DebugHandler {
+            Some,
+            None,
+        }
+
         let mut binding = f.debug_struct("RouteNode");
         let f = binding
             .field("static_children", &self.static_children)
@@ -71,9 +128,9 @@ impl Debug for RouteNode {
             .field("wildcard_child", &self.wildcard_child);
 
         let f = if self.handler.is_some() {
-            f.field("handler", &"Fn")
+            f.field("handler", &DebugHandler::Some)
         } else {
-            f.field("handler", &"None")
+            f.field("handler", &DebugHandler::None)
         };
 
         f.finish()
@@ -105,14 +162,12 @@ impl RouteNode {
         H::Output: Responder<Body = BoxBody> + 'static,
         Error: From<Args::Error>,
     {
-        let handler_arc = Arc::new(handler);
-
-        let handler_fn = wrap_handler_fn(handler_arc);
+        let handler_fn = HandlerFn::wrap(handler);
 
         self.insert_segments(route.segments(), handler_fn);
     }
 
-    fn insert_segments(&mut self, segments: &[PathSegment], handler: Arc<HandlerFn>) {
+    fn insert_segments(&mut self, segments: &[PathSegment], handler: HandlerFn) {
         if segments.is_empty() {
             self.handler = Some(handler);
             return;
@@ -151,14 +206,14 @@ impl RouteNode {
         }
     }
 
-    pub fn match_path(&self, route: &Route) -> Option<(Arc<HandlerFn>, BTreeMap<String, String>)> {
+    pub fn match_path(&self, route: &Route) -> Option<(HandlerFn, BTreeMap<String, String>)> {
         self.match_segments(route.segments())
     }
 
     pub fn match_segments(
         &self,
         segments: &[PathSegment],
-    ) -> Option<(Arc<HandlerFn>, BTreeMap<String, String>)> {
+    ) -> Option<(HandlerFn, BTreeMap<String, String>)> {
         if segments.is_empty() {
             return self
                 .handler

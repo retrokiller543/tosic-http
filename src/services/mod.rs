@@ -1,3 +1,5 @@
+mod tower;
+
 use crate::traits::handler::Handler;
 use http::Method;
 

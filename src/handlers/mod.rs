@@ -5,7 +5,7 @@ use crate::body::BoxBody;
 use crate::error::Error;
 use crate::handlers::not_found::not_found;
 use crate::handlers::wrapper::HandlerWrapper;
-use crate::route::{wrap_handler_fn, HandlerFn, Route, RouteNode};
+use crate::route::{HandlerFn, Route, RouteNode};
 use crate::traits::from_request::FromRequest;
 use crate::traits::handler::Handler;
 use crate::traits::responder::Responder;
@@ -13,7 +13,6 @@ use http::Method;
 use std::collections::{BTreeMap, HashMap};
 use std::future::Future;
 use std::ops::{Deref, DerefMut};
-use std::sync::Arc;
 use tracing::debug;
 
 #[derive(Default, Debug, Clone)]
@@ -59,8 +58,8 @@ impl Handlers {
         }
     }
 
-    fn not_found_handler() -> Arc<HandlerFn> {
-        wrap_handler_fn(Arc::new(not_found))
+    fn not_found_handler() -> HandlerFn {
+        HandlerFn::wrap(not_found)
     }
 }
 

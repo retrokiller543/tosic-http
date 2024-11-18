@@ -40,6 +40,9 @@ pub enum ServerError {
     PartialParsed,
     #[error("Invalid encoding for request")]
     InvalidEncoding,
+    #[error("Failed to construct the service")]
+
+    ServiceConstructionFailed,
 }
 
 pub struct Error {

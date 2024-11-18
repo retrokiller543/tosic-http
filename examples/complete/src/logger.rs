@@ -11,7 +11,7 @@ pub fn init_tracing() -> Result<(), HttpServerError> {
         let level = LevelFilter::INFO;
 
         #[cfg(debug_assertions)]
-        let level = LevelFilter::DEBUG;
+        let level = LevelFilter::TRACE;
 
         EnvFilter::builder()
             .with_default_directive(level.into())

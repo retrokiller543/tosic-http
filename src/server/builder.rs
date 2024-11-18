@@ -15,23 +15,49 @@ use tokio::net::ToSocketAddrs;
 
 #[allow(unused_imports)]
 use std::any::TypeId;
+use tower::layer::util::{Identity, Stack};
+use tower::{Layer, Service, ServiceBuilder};
+use crate::prelude::{HttpPayload, HttpRequest, HttpResponse};
+use crate::route::HandlerFn;
 
-#[derive(Default, Debug, Clone)]
+#[derive(Debug, Clone)]
 /// [`HttpServerBuilder`] is a builder for configuring and initializing an [`HttpServer`].
 /// It allows for setting up the server address, adding services, and configuring shared state.
-pub struct HttpServerBuilder<T: ToSocketAddrs + Default + Clone> {
+pub struct HttpServerBuilder<T, L>
+where
+    T: ToSocketAddrs + Default + Clone,
+    L: Layer<HandlerFn> + Clone + Send + 'static
+{
     addr: Option<T>,
     handlers: Handlers,
     app_state: State,
+    service_builder: ServiceBuilder<L>
 }
 
-impl<T: ToSocketAddrs + Default + Clone + Debug> HttpServerBuilder<T> {
-    pub(crate) fn new() -> Self {
+impl<T: ToSocketAddrs + Default + Debug + Clone> Default for HttpServerBuilder<T, Identity> {
+    fn default() -> Self {
         Self {
-            ..Default::default()
+            addr: None,
+            handlers: Handlers::new(),
+            app_state: State::new(),
+            service_builder: ServiceBuilder::new(),
         }
     }
+}
 
+impl<T: ToSocketAddrs + Default + Debug + Clone> HttpServerBuilder<T, Identity> {
+    pub(crate) fn new() -> HttpServerBuilder<T, Identity> {
+        Self::default()
+    }
+}
+
+impl<T, L> HttpServerBuilder<T , L>
+where
+    T: ToSocketAddrs + Default + Debug + Clone,
+    L: Layer<HandlerFn> + Clone + Send + 'static,
+    L::Service: Service<(HttpRequest, HttpPayload), Response = HttpResponse, Error = Error> + Send + 'static,
+    <L::Service as Service<(HttpRequest, HttpPayload)>>::Future: Send + 'static,
+{
     /// Adds shared application state to be accessible in request handlers.
     ///
     /// State is stored in a [`HashMap`] and keyed based on the [`TypeId`] of the state object.
@@ -170,9 +196,25 @@ impl<T: ToSocketAddrs + Default + Clone + Debug> HttpServerBuilder<T> {
     ///     .unwrap();
     /// # }
     /// ```
-    pub async fn build(self) -> io::Result<HttpServer> {
+    pub async fn build(self) -> io::Result<HttpServer<L>> {
         let addr = self.addr.unwrap_or_default();
 
-        HttpServer::new(addr, self.handlers, self.app_state).await
+        HttpServer::new(addr, self.handlers, self.app_state, self.service_builder).await
     }
+
+     /// Wraps a layer in the stack.
+     ///
+     /// A layer is a middleware that can modify the request and response.
+     pub fn wrap<S>(self, layer: S) -> HttpServerBuilder<T, Stack<S, L>>
+     where
+         S: Layer<HandlerFn> + Clone + Send + 'static,
+         L: Layer<S::Service> + Clone + Send + 'static,
+     {
+         HttpServerBuilder {
+             addr: self.addr,
+             handlers: self.handlers,
+             app_state: self.app_state,
+             service_builder: self.service_builder.layer(layer),
+         }
+     }
 }

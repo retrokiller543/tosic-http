@@ -280,6 +280,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tosic-http",
+ "tower 0.5.1",
  "tracing",
  "tracing-subscriber",
 ]
