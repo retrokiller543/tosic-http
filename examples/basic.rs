@@ -1,7 +1,6 @@
 #![allow(dead_code)]
 #![feature(impl_trait_in_assoc_type)]
 
-use http::Method;
 use serde::Deserialize;
 use thiserror::Error;
 use tokio::io;
