@@ -153,6 +153,47 @@ impl RouteNode {
         }
     }
 
+    pub fn extend(&mut self, other: RouteNode) {
+        // Merge static_children
+        for (key, mut other_child) in other.static_children {
+            if let Some(child) = self.static_children.get_mut(&key) {
+                child.extend(other_child);
+            } else {
+                self.static_children.insert(key, other_child);
+            }
+        }
+
+        // Merge parameter_child
+        if let Some((other_param_name, other_child)) = other.parameter_child {
+            if let Some((param_name, child)) = &mut self.parameter_child {
+                if *param_name == other_param_name {
+                    child.extend(*other_child);
+                } else {
+                    // Decide how to handle different parameter names
+                    // For simplicity, we can prefer the existing parameter
+                    // or you can choose to overwrite it
+                    child.extend(*other_child);
+                }
+            } else {
+                self.parameter_child = Some((other_param_name, other_child));
+            }
+        }
+
+        // Merge wildcard_child
+        if let Some(other_child) = other.wildcard_child {
+            if let Some(child) = &mut self.wildcard_child {
+                child.extend(*other_child);
+            } else {
+                self.wildcard_child = Some(other_child);
+            }
+        }
+
+        // Merge handler
+        if other.handler.is_some() {
+            self.handler = other.handler;
+        }
+    }
+
     pub fn insert<H, Args>(&mut self, route: &Route, handler: H)
     where
         H: Handler<Args> + Send + Sync + 'static,

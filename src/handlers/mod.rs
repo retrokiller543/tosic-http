@@ -61,6 +61,16 @@ impl Handlers {
     fn not_found_handler() -> HandlerFn {
         HandlerFn::wrap(not_found)
     }
+
+    pub fn extend(&mut self, other: Handlers) {
+        for (method, other_node) in other.0 {
+            if let Some(node) = self.0.get_mut(&method) {
+                node.extend(other_node);
+            } else {
+                self.0.insert(method, other_node);
+            }
+        }
+    }
 }
 
 impl Deref for Handlers {

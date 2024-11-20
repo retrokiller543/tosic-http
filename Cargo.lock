@@ -2941,6 +2941,7 @@ dependencies = [
  "httparse",
  "itertools",
  "mime",
+ "paste",
  "pin-project-lite",
  "serde",
  "serde_json",

@@ -23,3 +23,4 @@ pub mod services;
 pub(crate) mod state;
 pub mod traits;
 pub(crate) mod utils;
+pub mod resource;

@@ -19,6 +19,7 @@ use crate::route::HandlerFn;
 use std::any::TypeId;
 use tower::layer::util::{Identity, Stack};
 use tower::{Layer, Service, ServiceBuilder};
+use crate::resource::RouteBuilder;
 
 #[derive(Debug, Clone)]
 /// [`HttpServerBuilder`] is a builder for configuring and initializing an [`HttpServer`].
@@ -157,6 +158,12 @@ where
         Error: From<Args::Error>,
     {
         self.handlers.insert(H::METHOD, H::PATH, handler);
+        self
+    }
+
+    pub fn route(mut self, route_builder: RouteBuilder) -> Self {
+        self.handlers.extend(route_builder.handlers());
+
         self
     }
 

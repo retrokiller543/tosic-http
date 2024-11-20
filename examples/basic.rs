@@ -15,6 +15,7 @@ use tosic_http::server::builder::HttpServerBuilder;
 use tosic_http::traits::responder::Responder;
 use tosic_http_macro::get;
 use tracing::dispatcher::SetGlobalDefaultError;
+use tosic_http::resource::post;
 
 #[derive(Debug, Error)]
 enum HttpServerError {
@@ -109,6 +110,10 @@ async fn test_handler(
     format!("Hello, {}!", json.username)
 }
 
+async fn test_get() -> impl Responder<Body = BoxBody> {
+    "hi"
+}
+
 #[get("/test")]
 async fn test_fn() -> impl Responder<Body = BoxBody> {
     "hello testing world"
@@ -190,7 +195,8 @@ async fn main() -> Result<(), HttpServerError> {
     let server = HttpServerBuilder::default()
         .app_state(state)
         .bind("0.0.0.0:4221")
-        .service_method(Method::POST, "/", test_handler)
+        //.service_method(Method::POST, "/", test_handler)
+        .route(post("/", test_handler).get(test_get))
         //.service_method(Method::GET, "/bad", not_working)
         .service(not_working)
         .service(test_fn)
