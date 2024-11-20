@@ -1,22 +1,19 @@
+use crate::models::User;
+use crate::DbPool;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::Json;
-use crate::DbPool;
-use crate::models::User;
 
-pub async fn create_user(
-    State(pool): State<DbPool>,
-    Json(user): Json<User>,
-) -> Json<User> {
+pub async fn create_user(State(pool): State<DbPool>, Json(user): Json<User>) -> Json<User> {
     let pool = pool.lock().await;
     let result = sqlx::query_as::<_, User>(
         "INSERT INTO users (name, email) VALUES (?, ?) RETURNING id, name, email",
     )
-        .bind(&user.name)
-        .bind(&user.email)
-        .fetch_one(&*pool)
-        .await
-        .expect("Failed to insert user");
+    .bind(&user.name)
+    .bind(&user.email)
+    .fetch_one(&*pool)
+    .await
+    .expect("Failed to insert user");
 
     Json(result)
 }
@@ -57,12 +54,12 @@ pub async fn update_user(
     let result = sqlx::query_as::<_, User>(
         "UPDATE users SET name = ?, email = ? WHERE id = ? RETURNING id, name, email",
     )
-        .bind(&user.name)
-        .bind(&user.email)
-        .bind(id)
-        .fetch_optional(&*pool)
-        .await
-        .expect("Failed to update user");
+    .bind(&user.name)
+    .bind(&user.email)
+    .bind(id)
+    .fetch_optional(&*pool)
+    .await
+    .expect("Failed to update user");
 
     match result {
         Some(u) => Ok(Json(u)),

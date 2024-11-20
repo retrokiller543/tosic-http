@@ -1,3 +1,5 @@
+//! The request object contains information about the incoming request
+
 mod test;
 
 use crate::body::message_body::MessageBody;
@@ -15,6 +17,8 @@ use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
 
 #[derive(Clone, Debug, Default)]
+#[allow(missing_docs)]
+/// The request object
 pub struct HttpRequest {
     pub method: Method,
     pub uri: Uri,
@@ -25,6 +29,7 @@ pub struct HttpRequest {
 }
 
 #[derive(Clone, Debug)]
+/// The payload of the request
 pub struct HttpPayload(BoxBody);
 
 impl Default for HttpPayload {
@@ -34,10 +39,12 @@ impl Default for HttpPayload {
 }
 
 impl HttpPayload {
+    /// Create a new `HttpPayload`
     pub(crate) fn new(body: BoxBody) -> Self {
         HttpPayload(body)
     }
 
+    /// Create a new `HttpPayload` from bytes
     pub(crate) fn from_bytes(bytes: Bytes) -> Self {
         HttpPayload(BoxBody::new(bytes))
     }
@@ -58,16 +65,7 @@ impl DerefMut for HttpPayload {
 }
 
 impl HttpRequest {
-    pub(crate) fn new(method: Method, uri: Uri, headers: HeaderMap, version: Version) -> Self {
-        HttpRequest {
-            method,
-            uri,
-            headers,
-            version,
-            ..Default::default()
-        }
-    }
-
+    /// Create a new `HttpRequest`
     pub(crate) fn from_bytes(buffer: &[u8]) -> Result<(Self, HttpPayload), ServerError> {
         let mut headers = [httparse::EMPTY_HEADER; 32];
         let mut req = Request::new(&mut headers);
@@ -94,34 +92,42 @@ impl HttpRequest {
         }
     }
 
+    /// Get the uri
     pub fn uri(&self) -> &Uri {
         &self.uri
     }
 
+    /// Get the path
     pub fn path(&self) -> &str {
         self.uri().path()
     }
 
+    /// Get the query
     pub fn query(&self) -> Option<&str> {
         self.uri().query()
     }
 
+    /// Get the method
     pub fn method(&self) -> &Method {
         &self.method
     }
 
+    /// Get the headers
     pub fn headers(&self) -> &HeaderMap {
         &self.headers
     }
 
+    /// Get the version
     pub fn version(&self) -> &Version {
         &self.version
     }
 
+    /// Get the params
     pub fn params(&self) -> &BTreeMap<String, String> {
         &self.params
     }
 
+    /// Get the params
     pub fn params_mut(&mut self) -> &mut BTreeMap<String, String> {
         &mut self.params
     }

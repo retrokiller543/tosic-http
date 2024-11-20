@@ -1,3 +1,5 @@
+//! Prelude re-exports of the most used traits and types from the crate.
+
 pub use tosic_http_macro::*;
 
 pub use crate::body::BoxBody;

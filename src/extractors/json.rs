@@ -1,3 +1,5 @@
+//! Json extractor
+
 use crate::body::message_body::MessageBody;
 use crate::body::BoxBody;
 use crate::error::ServerError;
@@ -8,6 +10,7 @@ use serde::de::DeserializeOwned;
 use std::fmt::Debug;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+/// Json extractor to extract data from the request
 pub struct Json<V>(pub V);
 
 impl<V: DeserializeOwned> FromRequest for Json<V> {
@@ -31,6 +34,7 @@ impl<V: DeserializeOwned> FromRequest for Json<V> {
 
 impl<T> Json<T> {
     #[inline]
+    /// Returns the inner value
     pub fn into_inner(self) -> T {
         self.0
     }

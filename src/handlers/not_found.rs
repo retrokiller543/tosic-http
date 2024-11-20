@@ -1,3 +1,5 @@
+//! The default not found handler
+
 use crate::body::BoxBody;
 use crate::request::HttpRequest;
 use crate::response::HttpResponse;

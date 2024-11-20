@@ -1,3 +1,9 @@
+//! Main Error handling of the library
+//!
+//! Internally all errors are wrapped in the `ServerError` type.
+//!
+//! Externally the [`struct@Error`] should be used or implement the [`ResponseError`] trait.
+
 use crate::body::BoxBody;
 use crate::response::HttpResponse;
 use http::{HeaderMap, Response};
@@ -8,9 +14,12 @@ use thiserror::Error;
 mod foreign_impls;
 pub(crate) mod macros;
 pub mod response_error;
+
 pub use response_error::ResponseError;
 
 #[derive(Debug, Error)]
+#[allow(missing_docs)]
+/// The main error type used in the library
 pub enum ServerError {
     #[error(transparent)]
     Io(#[from] std::io::Error),
@@ -44,6 +53,7 @@ pub enum ServerError {
     ServiceConstructionFailed,
 }
 
+/// External Error type should implement the `ResponseError` trait.
 pub struct Error {
     cause: Box<dyn ResponseError>,
 }

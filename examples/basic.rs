@@ -9,12 +9,12 @@ use tosic_http::error::response_error::ResponseError;
 use tosic_http::extractors::json::Json;
 use tosic_http::extractors::path::Path as HttpPath;
 use tosic_http::extractors::query::Query;
+use tosic_http::resource::post;
 use tosic_http::response::HttpResponse;
 use tosic_http::server::builder::HttpServerBuilder;
 use tosic_http::traits::responder::Responder;
 use tosic_http_macro::get;
 use tracing::dispatcher::SetGlobalDefaultError;
-use tosic_http::resource::post;
 
 #[derive(Debug, Error)]
 enum HttpServerError {

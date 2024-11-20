@@ -1,6 +1,7 @@
-mod models;
 mod handlers;
+mod models;
 
+use crate::handlers::*;
 use axum::{
     routing::{get, post},
     Router,
@@ -8,7 +9,6 @@ use axum::{
 use sqlx::sqlite::SqlitePoolOptions;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use crate::handlers::*;
 
 type DbPool = Arc<Mutex<sqlx::SqlitePool>>;
 
@@ -28,18 +28,20 @@ async fn main() {
             email TEXT NOT NULL
         );",
     )
-        .execute(&pool)
-        .await
-        .expect("Failed to create table");
+    .execute(&pool)
+    .await
+    .expect("Failed to create table");
 
     let shared_pool = Arc::new(Mutex::new(pool));
 
     // Build the router
     let app = Router::new()
         .route("/users", post(create_user).get(list_users))
-        .route("/users/:id", get(get_user).put(update_user).delete(delete_user))
+        .route(
+            "/users/:id",
+            get(get_user).put(update_user).delete(delete_user),
+        )
         .with_state(shared_pool);
-
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
     axum::serve(listener, app).await.unwrap();

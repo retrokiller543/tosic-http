@@ -1,3 +1,5 @@
+//! The body of the request and response
+
 use crate::body::size::BodySize;
 use crate::body::BoxBody;
 use bytes::Bytes;
@@ -12,17 +14,26 @@ use std::task::{Context, Poll};
     label = "Convert it to `Bytes` or `BytesMut` or any `String` type",
     note = "if you find that `MessageBody` should be implemented on `{Self}`, then please submit an issue and it might be added in the future"
 )]
+/// # MessageBody
+///
+/// The `MessageBody` trait is used to define how to extract data from the request and construct the
+/// body of the response
+///
 pub trait MessageBody: Debug {
+    /// Error type when polling the body
     type Error: Into<Box<dyn std::error::Error>>;
 
+    /// Get the size of the body
     fn size(&self) -> BodySize;
 
+    /// Poll the next chunk of the body
     fn poll_next(
         self: Pin<&mut Self>,
         cx: &mut Context<'_>,
     ) -> Poll<Option<Result<Bytes, Self::Error>>>;
 
     #[inline]
+    /// Try to convert the body to bytes
     fn try_into_bytes(self) -> Result<Bytes, Self>
     where
         Self: Sized,
@@ -31,6 +42,7 @@ pub trait MessageBody: Debug {
     }
 
     #[inline]
+    /// Boxes the body
     fn boxed(self) -> BoxBody
     where
         Self: Sized + Clone + 'static,
@@ -41,6 +53,7 @@ pub trait MessageBody: Debug {
 
 pin_project! {
     #[derive(Clone)]
+    /// # MessageBodyMapErr
     pub(crate) struct MessageBodyMapErr<B, F> {
         #[pin]
         body: B,
@@ -53,6 +66,7 @@ where
     B: MessageBody,
     F: FnOnce(B::Error) -> E,
 {
+    /// Creates a new `MessageBodyMapErr`
     pub(crate) fn new(body: B, mapper: F) -> Self {
         Self {
             body,

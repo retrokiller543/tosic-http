@@ -4,11 +4,10 @@ use std::io;
 use tosic_http::prelude::Method;
 use tosic_http::server::builder::HttpServerBuilder;
 
-mod models;
 mod handlers;
+mod models;
 
 use crate::handlers::*;
-
 
 #[tokio::main]
 async fn main() -> io::Result<()> {
@@ -24,9 +23,9 @@ async fn main() -> io::Result<()> {
             email TEXT NOT NULL
         );",
     )
-        .execute(&pool)
-        .await
-        .expect("Failed to create table");
+    .execute(&pool)
+    .await
+    .expect("Failed to create table");
 
     let server = HttpServerBuilder::default()
         .app_state(pool)

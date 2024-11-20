@@ -1,3 +1,5 @@
+//! Stores the handlers for each route. and keyed by method and then stored in a tree.
+
 mod not_found;
 pub(crate) mod wrapper;
 
@@ -16,13 +18,16 @@ use std::ops::{Deref, DerefMut};
 use tracing::debug;
 
 #[derive(Default, Debug, Clone)]
+/// A collection of handlers for each route.
 pub struct Handlers(pub HashMap<Method, RouteNode>);
 
 impl Handlers {
+    /// Create a new empty collection
     pub fn new() -> Self {
         Handlers(HashMap::new())
     }
 
+    /// Insert a handler for a route and method
     pub fn insert<H, Args>(&mut self, method: Method, path: &str, handler: H)
     where
         H: Handler<Args> + Send + Sync + 'static,
@@ -38,6 +43,7 @@ impl Handlers {
     }
 
     #[cfg_attr(feature = "trace", tracing::instrument(level = "trace", skip(self)))]
+    /// Get the handler for a given method and path
     pub fn get_handler(&self, method: &Method, path: &str) -> HandlerWrapper {
         let entry = self.get(method);
 
@@ -58,10 +64,12 @@ impl Handlers {
         }
     }
 
+    /// internal method to get the not found handler
     fn not_found_handler() -> HandlerFn {
         HandlerFn::wrap(not_found)
     }
 
+    /// Extends the handlers with a new set of handlers
     pub fn extend(&mut self, other: Handlers) {
         for (method, other_node) in other.0 {
             if let Some(node) = self.0.get_mut(&method) {

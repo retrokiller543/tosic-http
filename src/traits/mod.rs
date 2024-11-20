@@ -1,3 +1,5 @@
+//! Main traits of the framework
+
 pub mod from_request;
 pub mod handler;
 pub mod responder;

@@ -1,3 +1,5 @@
+//! Tests for the HTTP server
+
 #![cfg(test)]
 
 use crate::body::BoxBody;
@@ -9,7 +11,7 @@ use crate::traits::responder::Responder;
 use http::Method;
 use std::future::Future;
 
-async fn test_handler(req: HttpRequest) -> impl Responder<Body = BoxBody> {
+async fn test_handler(_req: HttpRequest) -> impl Responder<Body = BoxBody> {
     "test response"
 }
 
@@ -20,7 +22,7 @@ impl Handler<(HttpRequest,)> for TestStructHandler {
     type Future = impl Future<Output = Self::Output>;
 
     fn call(&self, args: (HttpRequest,)) -> Self::Future {
-        async fn test_handler(req: HttpRequest) -> impl Responder<Body = BoxBody> {
+        async fn test_handler(_req: HttpRequest) -> impl Responder<Body = BoxBody> {
             "test response"
         }
 
@@ -43,5 +45,5 @@ async fn test() {
 
     assert!(server.is_ok());
 
-    let server = server.unwrap();
+    let _server = server.unwrap();
 }

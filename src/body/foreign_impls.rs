@@ -344,7 +344,6 @@ macro_rules! tuple_body {
             #[inline]
             fn size(&self) -> BodySize {
                 let mut total_size = 0;
-                let is_stream = false;
 
                 let ($($T,)+) = self;
 

@@ -1,3 +1,8 @@
+//! Extractors are used to automatically extract data from the request
+//! to be used in the handler
+//!
+//! Implementing the [`FromRequest`] trait on a type will create a new extractor
+
 use crate::error::response_error::ResponseError;
 use crate::request::{HttpPayload, HttpRequest};
 use crate::traits::from_request::FromRequest;
@@ -16,6 +21,8 @@ pub use path::Path;
 pub use query::Query;
 
 #[derive(Debug, Error)]
+#[allow(missing_docs)]
+/// An error that can happen when extracting data
 pub enum ExtractionError {
     #[error(transparent)]
     Json(#[from] serde_json::Error),

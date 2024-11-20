@@ -1,11 +1,11 @@
-mod models;
 mod handlers;
+mod models;
 
+use crate::handlers::{create_user, delete_user, get_user, list_users, update_user};
 use actix_web::{web, App, HttpServer, Responder};
 use sqlx::sqlite::SqlitePoolOptions;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use crate::handlers::{create_user, delete_user, get_user, list_users, update_user};
 
 type DbPool = Arc<Mutex<sqlx::SqlitePool>>;
 
@@ -25,9 +25,9 @@ async fn main() -> std::io::Result<()> {
             email TEXT NOT NULL
         );",
     )
-        .execute(&pool)
-        .await
-        .expect("Failed to create table");
+    .execute(&pool)
+    .await
+    .expect("Failed to create table");
 
     let shared_pool = Arc::new(Mutex::new(pool));
 
@@ -46,7 +46,7 @@ async fn main() -> std::io::Result<()> {
                     .route(web::delete().to(delete_user)),
             )
     })
-        .bind("127.0.0.1:3001")?
-        .run()
-        .await
+    .bind("127.0.0.1:3001")?
+    .run()
+    .await
 }

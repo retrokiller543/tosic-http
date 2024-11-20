@@ -1,3 +1,5 @@
+//! Extracts data from the path
+
 use crate::error::response_error::ResponseError;
 use crate::extractors::ExtractionError;
 use crate::futures::{err, ok, Ready};
@@ -7,15 +9,18 @@ use std::fmt::{Debug, Display};
 use std::str::FromStr;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+/// Path extractor
 pub struct Path<V>(pub V);
 
 impl<T> Path<T> {
     #[inline]
+    /// Creates a new path extractor
     pub(crate) fn new(value: T) -> Self {
         Path(value)
     }
 
     #[inline]
+    /// Returns the inner value
     pub fn into_inner(self) -> T {
         self.0
     }
@@ -92,6 +97,30 @@ where
     }
 }
 
+/*impl<V: FromStr> FromRequest for Path<V>
+where
+    V::Err: ResponseError + Display + Debug
+{
+    type Error = ExtractionError;
+    type Future = Ready<Result<Self, Self::Error>>;
+
+    #[inline]
+    fn from_request(req: &HttpRequest, _: &mut HttpPayload) -> Self::Future {
+        let params = req.params();
+        let value = params.first();
+        match value {
+            Some(value) => {
+                let parsed: V = match value.clone().parse() {
+                    Ok(val) => val,
+                    Err(error) => return err(ExtractionError::Path(error.to_string())),
+                };
+                ok(Path::new(parsed))
+            }
+            None => err(ExtractionError::MissingPathField),
+        }
+    }
+}*/
+
 macro_rules! impl_tuple (
     {$($T:ident)+} => {
         #[allow(non_snake_case)]
@@ -132,3 +161,21 @@ impl_tuple! {A A1 A2 A3 A4 A5}
 impl_tuple! {A A1 A2 A3 A4 A5 A6}
 impl_tuple! {A A1 A2 A3 A4 A5 A6 A7}
 impl_tuple! {A A1 A2 A3 A4 A5 A6 A7 A8}
+impl_tuple! {A A1 A2 A3 A4 A5 A6 A7 A8 A9}
+impl_tuple! {A A1 A2 A3 A4 A5 A6 A7 A8 A9 A10}
+impl_tuple! {A A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11}
+impl_tuple! {A A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12}
+impl_tuple! {A A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13}
+impl_tuple! {A A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14}
+impl_tuple! {A A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15}
+impl_tuple! {A A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15 A16}
+impl_tuple! {A A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15 A16 A17}
+impl_tuple! {A A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15 A16 A17 A18}
+impl_tuple! {A A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15 A16 A17 A18 A19}
+impl_tuple! {A A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15 A16 A17 A18 A19 A20}
+impl_tuple! {A A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15 A16 A17 A18 A19 A20 A21}
+impl_tuple! {A A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15 A16 A17 A18 A19 A20 A21 A22}
+impl_tuple! {A A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15 A16 A17 A18 A19 A20 A21 A22 A23}
+impl_tuple! {A A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15 A16 A17 A18 A19 A20 A21 A22 A23 A24}
+impl_tuple! {A A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15 A16 A17 A18 A19 A20 A21 A22 A23 A24 A25}
+impl_tuple! {A A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15 A16 A17 A18 A19 A20 A21 A22 A23 A24 A25 A26}

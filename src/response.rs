@@ -1,3 +1,5 @@
+//! This module contains the definition of the [`HttpResponse`] struct and its associated methods.
+
 use crate::body::message_body::MessageBody;
 use crate::body::BoxBody;
 use crate::request::HttpRequest;
@@ -9,6 +11,7 @@ use std::io::Write;
 use tokio::io;
 
 #[derive(Clone, Debug)]
+/// The HTTP response struct
 pub struct HttpResponse<Body = BoxBody> {
     pub(crate) body: Body,
     pub(crate) status_code: StatusCode,
@@ -17,6 +20,7 @@ pub struct HttpResponse<Body = BoxBody> {
 }
 
 impl HttpResponse<BoxBody> {
+    /// Create a new instance of the `HttpResponse` struct with a specific status code.
     pub fn new<T: TryInto<StatusCode>>(status_code: T) -> Self
     where
         T::Error: Debug,
@@ -29,22 +33,27 @@ impl HttpResponse<BoxBody> {
         }
     }
 
+    /// Get the status code of the response
     pub fn status_code(&self) -> StatusCode {
         self.status_code
     }
 
+    /// Get the headers of the response
     pub fn headers(&self) -> &http::HeaderMap {
         &self.headers
     }
 
+    /// Get the mutable headers of the response
     pub fn headers_mut(&mut self) -> &mut http::HeaderMap {
         &mut self.headers
     }
 
+    /// Set the body of the response
     pub fn set_body(self, body: BoxBody) -> Self {
         Self { body, ..self }
     }
 
+    /// Convert the response to bytes
     pub(crate) fn to_bytes(&self) -> io::Result<Vec<u8>> {
         let mut response_bytes = Vec::new();
 
@@ -105,10 +114,12 @@ impl HttpResponse<BoxBody> {
     }
 
     #[allow(non_snake_case)]
+    /// Creates a new `HttpResponse` with a status code of 200 (OK).
     pub fn Ok() -> Self {
         Self::new(200)
     }
 
+    /// Creates a new `HttpResponse` with a status code of 201 (Created).
     pub fn json<B>(mut self, data: &B) -> Self
     where
         B: Serialize,

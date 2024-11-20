@@ -1,3 +1,6 @@
+//! Handler trait defines the signature of a handler function
+//! that can be used to implement a service handler
+
 use std::future::Future;
 
 #[diagnostic::on_unimplemented(
@@ -5,10 +8,17 @@ use std::future::Future;
     label = "Used here",
     note = "The above format is valid with up to 26 parameters where each parameter implements the `FromRequest` trait"
 )]
+/// # Handler trait
+///
+/// The Handler trait defines the signature of a handler function
+/// that can be used to implement a service handler
 pub trait Handler<Args>: 'static {
+    /// The output type of the handler
     type Output;
+    /// The future type of the handler
     type Future: Future<Output = Self::Output>;
 
+    /// Calls the handler function with the given arguments
     fn call(&self, args: Args) -> Self::Future;
 }
 

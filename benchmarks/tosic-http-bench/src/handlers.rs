@@ -1,6 +1,6 @@
-use sqlx::{Pool, Sqlite};
-use tosic_http::prelude::{Json, Data, HttpResponse, Responder, Path, BoxBody};
 use crate::models::User;
+use sqlx::{Pool, Sqlite};
+use tosic_http::prelude::{BoxBody, Data, HttpResponse, Json, Path, Responder};
 
 //#[post("/users")]
 pub async fn create_user(
@@ -11,11 +11,11 @@ pub async fn create_user(
     let result = sqlx::query_as::<_, User>(
         "INSERT INTO users (name, email) VALUES (?, ?) RETURNING id, name, email",
     )
-        .bind(&user.name)
-        .bind(&user.email)
-        .fetch_one(&*pool)
-        .await
-        .expect("Failed to insert user");
+    .bind(&user.name)
+    .bind(&user.email)
+    .fetch_one(&*pool)
+    .await
+    .expect("Failed to insert user");
 
     HttpResponse::Ok().json(&result)
 }
@@ -60,12 +60,12 @@ pub async fn update_user(
     let result = sqlx::query_as::<_, User>(
         "UPDATE users SET name = ?, email = ? WHERE id = ? RETURNING id, name, email",
     )
-        .bind(&user.name)
-        .bind(&user.email)
-        .bind(id.into_inner().0)
-        .fetch_optional(&*pool)
-        .await
-        .expect("Failed to update user");
+    .bind(&user.name)
+    .bind(&user.email)
+    .bind(id.into_inner().0)
+    .fetch_optional(&*pool)
+    .await
+    .expect("Failed to update user");
 
     match result {
         Some(u) => HttpResponse::Ok().json(&u),

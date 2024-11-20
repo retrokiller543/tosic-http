@@ -1,3 +1,6 @@
+//! Main entry point for the HTTP server.
+
+use crate::body::message_body::MessageBody;
 use crate::error::{Error, ServerError};
 use crate::handlers::Handlers;
 use crate::request::{HttpPayload, HttpRequest};
@@ -5,9 +8,8 @@ use crate::response::HttpResponse;
 use crate::route::HandlerFn;
 use crate::server::builder::HttpServerBuilder;
 use crate::state::State;
-use std::fmt::Debug;
-use bytes::Bytes;
 use http::HeaderMap;
+use std::fmt::Debug;
 use tokio::io;
 use tokio::io::BufReader;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -17,7 +19,6 @@ use tower::{Layer, Service, ServiceBuilder, ServiceExt};
 #[cfg(feature = "trace")]
 use tracing::trace;
 use tracing::{debug, error, info};
-use crate::body::message_body::MessageBody;
 
 pub mod builder;
 mod test;
@@ -43,7 +44,10 @@ where
         + 'static,
     <L::Service as Service<(HttpRequest, HttpPayload)>>::Future: Send + 'static,
 {
-    #[cfg_attr(feature = "trace", tracing::instrument(level = "trace", skip(service_builder)))]
+    #[cfg_attr(
+        feature = "trace",
+        tracing::instrument(level = "trace", skip(service_builder))
+    )]
     /// Create a new [`HttpServer`] instance and binds the server to the provided address.
     ///
     /// This meant to be called from [`HttpServerBuilder`] and not externally
@@ -102,8 +106,15 @@ where
         let service_builder = self.service_builder.clone();
 
         tokio::spawn(async move {
-            if let Err(e) =
-                Self::handle_connection(stream, socket, handlers, state, service_builder).await
+            if let Err(e) = Self::handle_connection(
+                stream,
+                #[cfg(feature = "trace")]
+                socket,
+                handlers,
+                state,
+                service_builder,
+            )
+            .await
             {
                 error!("Error handling connection from {}: {:?}", socket, e);
             }
@@ -116,7 +127,7 @@ where
     /// Handles an incoming connection by reading the request, processing it, and sending the response
     async fn handle_connection(
         stream: tokio::net::TcpStream,
-        socket: std::net::SocketAddr,
+        #[cfg(feature = "trace")] socket: std::net::SocketAddr,
         handlers: Handlers,
         state: State,
         service_builder: ServiceBuilder<L>,
@@ -175,10 +186,11 @@ where
         reader: BufReader<tokio::net::TcpStream>,
         mut response: HttpResponse,
     ) -> Result<(), ServerError> {
-        let content_length = response.body
+        let content_length = response
+            .body
             .clone()
             .try_into_bytes()
-            .unwrap_or(Bytes::new())
+            .unwrap_or_default()
             .len() as u64;
 
         Self::insert_content_length(response.headers_mut(), content_length);
@@ -197,7 +209,10 @@ where
     }
 
     fn insert_content_length(headers: &mut HeaderMap, content_length: u64) {
-        headers.insert("Content-Length", content_length.to_string().parse().unwrap());
+        headers.insert(
+            "Content-Length",
+            content_length.to_string().parse().unwrap(),
+        );
     }
 
     #[cfg_attr(feature = "trace", tracing::instrument(level = "trace", skip(reader)))]

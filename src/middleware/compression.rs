@@ -1,3 +1,5 @@
+//! Compression middleware
+
 use crate::body::message_body::MessageBody;
 use crate::body::BoxBody;
 use crate::error::ServerError;
@@ -12,12 +14,16 @@ use tower::{Layer, Service};
 use tracing::warn;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+/// Compression type
 pub enum CompressionType {
+    /// Gzip compression
     Gzip,
+    /// Deflate compression
     Deflate,
 }
 
 #[derive(Clone, Debug)]
+/// The compression layer to be used
 pub struct CompressionLayer;
 
 impl Default for CompressionLayer {
@@ -27,6 +33,7 @@ impl Default for CompressionLayer {
 }
 
 impl CompressionLayer {
+    /// Create a new compression layer
     pub fn new() -> Self {
         Self
     }
@@ -41,6 +48,7 @@ impl<S: Clone> Layer<S> for CompressionLayer {
 }
 
 #[derive(Clone, Debug)]
+/// Compression middleware
 pub struct CompressionMiddleware<S: Clone> {
     inner: S,
 }
@@ -66,29 +74,22 @@ where
         let mut inner = self.inner.clone();
         let (request, payload) = req;
 
-        // Clone the Accept-Encoding header if present
         let accept_encoding = request.headers().get("Accept-Encoding").cloned();
 
         Box::pin(async move {
-            // Call the inner service to get the response
             let mut response = inner.call((request, payload)).await?;
 
-            // Supported encodings by the server
             let supported_encodings = vec![CompressionType::Gzip, CompressionType::Deflate];
 
             if let Some(encoding_header) = accept_encoding {
                 if let Ok(encoding_str) = encoding_header.to_str() {
-                    // Parse the Accept-Encoding header
                     let client_encodings = parse_accept_encoding(encoding_str);
 
-                    // Find the best encoding supported by both client and server
                     if let Some(best_encoding) =
                         negotiate_encoding(&client_encodings, &supported_encodings)
                     {
-                        // Compress the response
                         response = compress_response(response, best_encoding).await?;
 
-                        // Set the Content-Encoding header
                         let encoding_value = match best_encoding {
                             CompressionType::Gzip => "gzip",
                             CompressionType::Deflate => "deflate",
@@ -102,7 +103,6 @@ where
                 }
             }
 
-            // Add the Vary header
             response
                 .headers_mut()
                 .insert("Vary", "Accept-Encoding".parse().unwrap());
@@ -112,6 +112,7 @@ where
     }
 }
 
+/// Helper function to compress the response
 async fn compress_response(
     mut response: HttpResponse,
     compression_type: CompressionType,
@@ -143,7 +144,7 @@ async fn compress_response(
     Ok(response)
 }
 
-// Helper function to parse the Accept-Encoding header
+/// Helper function to parse the Accept-Encoding header
 fn parse_accept_encoding(header_value: &str) -> Vec<(CompressionType, f32)> {
     let mut encodings = Vec::new();
 
@@ -160,12 +161,12 @@ fn parse_accept_encoding(header_value: &str) -> Vec<(CompressionType, f32)> {
                         None
                     }
                 })
-                .unwrap_or(1.0); // Default quality is 1.0 if not specified
+                .unwrap_or(1.0);
 
             let encoding = match encoding_str {
                 "gzip" => Some(CompressionType::Gzip),
                 "deflate" => Some(CompressionType::Deflate),
-                "*" => Some(CompressionType::Gzip), // Wildcard, default to gzip
+                "*" => Some(CompressionType::Gzip),
                 _ => None,
             };
 
@@ -175,13 +176,12 @@ fn parse_accept_encoding(header_value: &str) -> Vec<(CompressionType, f32)> {
         }
     }
 
-    // Sort encodings by quality in descending order
     encodings.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
 
     encodings
 }
 
-// Helper function to negotiate the best encoding
+/// Helper function to negotiate the best encoding
 fn negotiate_encoding(
     client_encodings: &[(CompressionType, f32)],
     server_encodings: &[CompressionType],

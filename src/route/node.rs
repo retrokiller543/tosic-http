@@ -1,3 +1,5 @@
+//! Routes and handlers are stored in a tree structure.
+
 use crate::body::BoxBody;
 use crate::error::Error;
 use crate::request::{HttpPayload, HttpRequest};
@@ -18,9 +20,11 @@ use crate::traits::handler::Handler;
 use crate::traits::responder::Responder;
 
 #[derive(Clone)]
+/// [`HandlerFn`] is a wrapper around a handler function so that it can be used as a [`Service`].
 pub struct HandlerFn(Arc<HandlerInner>);
 
 impl HandlerFn {
+    /// Create a new handler function from a handler
     pub(crate) fn wrap<H, Args>(handler: H) -> HandlerFn
     where
         H: Handler<Args> + Send + Sync + 'static,
@@ -50,6 +54,7 @@ impl DerefMut for HandlerFn {
     }
 }
 
+/// The inner type of [`HandlerFn`].
 pub(crate) type HandlerInner = dyn Fn(
         HttpRequest,
         &mut HttpPayload,
@@ -63,7 +68,7 @@ impl Service<(HttpRequest, HttpPayload)> for HandlerFn {
     type Future = Pin<Box<dyn Future<Output = Result<HttpResponse, Error>> + Send>>;
 
     #[inline]
-    fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+    fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         Poll::Ready(Ok(()))
     }
 
@@ -76,6 +81,7 @@ impl Service<(HttpRequest, HttpPayload)> for HandlerFn {
 unsafe impl Send for HttpPayload {}
 unsafe impl Send for BoxBody {}
 
+/// Wrap a handler function so that it can be used as a [`Service`].
 pub(crate) fn wrap_handler_fn<H, Args>(handler: Arc<H>) -> Arc<HandlerInner>
 where
     H: Handler<Args> + Send + Sync + 'static,
@@ -106,6 +112,17 @@ where
 }
 
 #[derive(Clone)]
+/// A tree of routes.
+///
+/// It supports static, parameter, and wildcard routes.
+///
+/// ## Syntax
+///
+/// - `/` -> static route
+/// - `/a/b` -> static route
+/// - `/{param}/a` -> parameter as the first segment
+/// - `/a/*/b` -> wildcard in the middle
+/// - `/a/**` -> deep wildcard
 pub struct RouteNode {
     static_children: HashMap<Cow<'static, str>, RouteNode>,
     parameter_child: Option<(Cow<'static, str>, Box<RouteNode>)>,
@@ -144,6 +161,7 @@ impl Default for RouteNode {
 }
 
 impl RouteNode {
+    /// Creates a new empty route node.
     pub fn new() -> Self {
         RouteNode {
             static_children: HashMap::new(),
@@ -153,9 +171,9 @@ impl RouteNode {
         }
     }
 
+    /// Extends the current route node with another route node.
     pub fn extend(&mut self, other: RouteNode) {
-        // Merge static_children
-        for (key, mut other_child) in other.static_children {
+        for (key, other_child) in other.static_children {
             if let Some(child) = self.static_children.get_mut(&key) {
                 child.extend(other_child);
             } else {
@@ -163,23 +181,14 @@ impl RouteNode {
             }
         }
 
-        // Merge parameter_child
         if let Some((other_param_name, other_child)) = other.parameter_child {
-            if let Some((param_name, child)) = &mut self.parameter_child {
-                if *param_name == other_param_name {
-                    child.extend(*other_child);
-                } else {
-                    // Decide how to handle different parameter names
-                    // For simplicity, we can prefer the existing parameter
-                    // or you can choose to overwrite it
-                    child.extend(*other_child);
-                }
+            if let Some((_param_name, child)) = &mut self.parameter_child {
+                child.extend(*other_child);
             } else {
                 self.parameter_child = Some((other_param_name, other_child));
             }
         }
 
-        // Merge wildcard_child
         if let Some(other_child) = other.wildcard_child {
             if let Some(child) = &mut self.wildcard_child {
                 child.extend(*other_child);
@@ -188,12 +197,12 @@ impl RouteNode {
             }
         }
 
-        // Merge handler
         if other.handler.is_some() {
             self.handler = other.handler;
         }
     }
 
+    /// Inserts a handler into the route node.
     pub fn insert<H, Args>(&mut self, route: &Route, handler: H)
     where
         H: Handler<Args> + Send + Sync + 'static,
@@ -208,6 +217,7 @@ impl RouteNode {
         self.insert_segments(route.segments(), handler_fn);
     }
 
+    /// Inserts individual segments into the route node.
     fn insert_segments(&mut self, segments: &[PathSegment], handler: HandlerFn) {
         if segments.is_empty() {
             self.handler = Some(handler);
@@ -247,10 +257,12 @@ impl RouteNode {
         }
     }
 
+    /// Matches a path against the route node.
     pub fn match_path(&self, route: &Route) -> Option<(HandlerFn, BTreeMap<String, String>)> {
         self.match_segments(route.segments())
     }
 
+    /// Matches segments against the route node.
     pub fn match_segments(
         &self,
         segments: &[PathSegment],
@@ -262,7 +274,6 @@ impl RouteNode {
                 .map(|handler| (handler, BTreeMap::new()));
         }
 
-        // Try static children first
         if let PathSegment::Static(segment) = &segments[0] {
             if let Some(child) = self.static_children.get(segment) {
                 if let Some((handler, params)) = child.match_segments(&segments[1..]) {
@@ -271,7 +282,6 @@ impl RouteNode {
             }
         }
 
-        // Then try parameter child
         if let Some((param_name, child)) = &self.parameter_child {
             if let Some((handler, mut params)) = child.match_segments(&segments[1..]) {
                 if let PathSegment::Static(value) = &segments[0] {
@@ -281,13 +291,10 @@ impl RouteNode {
             }
         }
 
-        // Then try wildcard child
         if let Some(child) = &self.wildcard_child {
             return if let Some((handler, params)) = child.match_segments(&segments[1..]) {
-                // wildcard found
                 Some((handler, params))
-            } else if let Some(handler) = &child.handler {
-                // wildcard deep found
+            } else if let Some(_handler) = &child.handler {
                 let remaining: Vec<_> = segments.to_vec();
                 let mut params = BTreeMap::new();
                 params.insert(
@@ -300,7 +307,6 @@ impl RouteNode {
                 );
                 Some((child.handler.clone()?, params))
             } else {
-                // no wildcard found
                 None
             };
         }

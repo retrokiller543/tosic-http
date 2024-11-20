@@ -1,15 +1,15 @@
+//! Wraps a handler and a map of parameters to make it simpler to work with in other parts of the project
+
 use crate::route::HandlerFn;
 use std::collections::BTreeMap;
 
+/// Wraps a handler and a map of parameters
 pub struct HandlerWrapper(pub(crate) HandlerFn, pub(crate) BTreeMap<String, String>);
 
 impl HandlerWrapper {
+    /// Returns the handler
     pub fn handler(&self) -> HandlerFn {
         self.0.clone()
-    }
-
-    pub fn params(&self) -> &BTreeMap<String, String> {
-        &self.1
     }
 }
 

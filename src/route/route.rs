@@ -1,3 +1,7 @@
+//! # Route
+//!
+//! A structured representation of a route
+
 use crate::route::path::Path;
 use std::borrow::Cow;
 use std::cmp::Ordering;
@@ -6,11 +10,24 @@ use std::fmt::{Display, Formatter};
 use std::ops::Add;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
+/// # Route
+///
+/// A structured representation of a route as a sequence of [`PathSegment`]
+///
 pub struct Route {
     path: Vec<PathSegment>,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
+/// # PathSegment
+///
+/// A segment of a [`Route`]
+///
+/// A path segment can be:
+/// - a static string
+/// - a parameter
+/// - a wildcard
+/// - a wildcard deep
 pub enum PathSegment {
     Static(Cow<'static, str>),
     Parameter(Cow<'static, str>),
@@ -30,16 +47,19 @@ impl Display for PathSegment {
 }
 
 impl Route {
+    /// Create a new route
     pub fn new(path: &str) -> Self {
         Self {
             path: Path::parse(path),
         }
     }
 
+    /// Get the segments of the route
     pub fn segments(&self) -> &[PathSegment] {
         &self.path
     }
 
+    /// Check if the request path matches the route
     pub fn is_match(&self, request_path: &str) -> Option<BTreeMap<String, String>> {
         let request_segments = request_path
             .split('/')
@@ -54,6 +74,7 @@ impl Route {
         }
     }
 
+    /// Check if the request path matches the route
     fn matches_segments(
         &self,
         request_segments: &[&str],

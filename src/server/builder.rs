@@ -1,3 +1,6 @@
+//! The [`HttpServerBuilder`] is a builder for configuring and initializing an [`HttpServer`].
+//! It allows for setting up the server address, adding services, and configuring shared state.
+
 use crate::body::BoxBody;
 use crate::error::Error;
 use crate::handlers::Handlers;
@@ -14,12 +17,14 @@ use tokio::io;
 use tokio::net::ToSocketAddrs;
 
 use crate::prelude::{HttpPayload, HttpRequest, HttpResponse};
+use crate::resource::RouteBuilder;
 use crate::route::HandlerFn;
 #[allow(unused_imports)]
 use std::any::TypeId;
+#[allow(unused_imports)]
+use std::collections::HashMap;
 use tower::layer::util::{Identity, Stack};
 use tower::{Layer, Service, ServiceBuilder};
-use crate::resource::RouteBuilder;
 
 #[derive(Debug, Clone)]
 /// [`HttpServerBuilder`] is a builder for configuring and initializing an [`HttpServer`].
@@ -161,6 +166,16 @@ where
         self
     }
 
+    /// Adds a route to the server.
+    ///
+    /// # Arguments
+    ///
+    /// - `route_builder`: A builder for defining the route.
+    ///
+    /// # Returns
+    ///
+    /// The builder instance with the route added.
+    ///
     pub fn route(mut self, route_builder: RouteBuilder) -> Self {
         self.handlers.extend(route_builder.handlers());
 

@@ -1,9 +1,13 @@
+//! No idea why this is a struct, but it is and it works
+
 use super::PathSegment;
 use std::borrow::Cow;
 
+/// Path parser
 pub struct Path;
 
 impl Path {
+    /// Parse a path
     pub fn parse(path: &str) -> Vec<PathSegment> {
         path.split('/')
             .filter(|segment| !segment.is_empty())

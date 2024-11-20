@@ -1,3 +1,5 @@
+//! Extractors for Shared state in the server
+
 use crate::extractors::ExtractionError;
 use crate::futures::{err, ok, Ready};
 use crate::request::{HttpPayload, HttpRequest};
@@ -7,14 +9,17 @@ use std::ops::Deref;
 use std::sync::Arc;
 
 #[derive(Clone)]
+/// The `Data` extractor
 pub struct Data<T: Send + Sync + 'static>(pub Arc<T>);
 
 impl<T: Send + Sync + 'static> Data<T> {
     #[inline]
+    /// Creates a new `Data`
     pub(crate) fn new(data: Arc<T>) -> Self {
         Data(data)
     }
     #[inline]
+    /// Returns the inner value
     pub fn into_inner(self) -> Arc<T> {
         Arc::clone(&self.0)
     }

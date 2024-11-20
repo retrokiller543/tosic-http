@@ -1,3 +1,7 @@
+//! # FromRequest
+//!
+//! The `FromRequest` trait is used to define how to extract data from the request
+
 #![allow(non_snake_case)]
 
 use crate::body::message_body::MessageBody;
@@ -21,19 +25,29 @@ use std::{
     note = "The FromRequest trait is implemented on all tuples up to size 26 that are filled with types that implement `FromRequest`",
     note = "If you have more than 26 arguments the trait will not be implemented and you will need to restructure your endpoint"
 )]
+/// # FromRequest
+///
+/// The `FromRequest` trait is used to define how to extract data from the request
+///
+/// Any type that implements `FromRequest` can be used as an extractor and will be extracted from the request automatically in a handler
+///
 pub trait FromRequest: Sized {
+    /// The error that can happen when extracting data
     type Error: Into<Error>;
+    /// The future that will be used to extract the data
     type Future: Future<Output = Result<Self, Self::Error>>;
 
     /// Extracts a value of type `Self` from the request. The request contains the request body at the moment but that might change in the future
     fn from_request(req: &HttpRequest, payload: &mut HttpPayload) -> Self::Future;
 
+    /// Extracts a value of type `Self` from the request
     fn extract(req: &HttpRequest) -> Self::Future {
         Self::from_request(req, &mut HttpPayload::default())
     }
 }
 
 pin_project! {
+    /// Future for results `FromRequest`
     pub struct FromRequestResFuture<Fut, E> {
         #[pin]
         fut: Fut,
@@ -42,6 +56,7 @@ pin_project! {
 }
 
 pin_project! {
+    /// Future for option `FromRequest`
     pub struct FromRequestOptFuture<Fut> {
         #[pin]
         fut: Fut,
@@ -84,6 +99,7 @@ macro_rules! impl_tuple_from_request {
             }
 
             pin_project! {
+                /// Future for tuple
                 pub struct $fut<$($T: FromRequest),+> {
                     $(
                         #[pin]
