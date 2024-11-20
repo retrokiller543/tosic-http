@@ -2,9 +2,8 @@ mod models;
 mod handlers;
 
 use axum::{
-    extract::State,
-    routing::{get, post, put, delete},
-    Json, Router,
+    routing::{get, post},
+    Router,
 };
 use sqlx::sqlite::SqlitePoolOptions;
 use std::sync::Arc;

@@ -1,9 +1,7 @@
 #![feature(impl_trait_in_assoc_type)]
 
 use std::io;
-use std::sync::Arc;
-use tokio::sync::Mutex;
-use tosic_http::prelude::{HttpServer, Method};
+use tosic_http::prelude::Method;
 use tosic_http::server::builder::HttpServerBuilder;
 
 mod models;
@@ -34,9 +32,9 @@ async fn main() -> io::Result<()> {
         .app_state(pool)
         .service_method(Method::POST, "/users", create_user)
         .service_method(Method::GET, "/users", list_users)
-        .service_method(Method::GET, "/users/:id", get_user)
-        .service_method(Method::PUT, "/users/:id", update_user)
-        .service_method(Method::DELETE, "/users/:id", delete_user)
+        .service_method(Method::GET, "/users/{id}", get_user)
+        .service_method(Method::PUT, "/users/{id}", update_user)
+        .service_method(Method::DELETE, "/users/{id}", delete_user)
         .bind("0.0.0.0:3002")
         .build()
         .await?;

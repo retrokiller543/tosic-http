@@ -6,6 +6,9 @@
       <sourceFolder url="file://$MODULE_DIR$/tosic-http-macro/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/examples" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/examples/complete/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/benchmarks/actix-web-bench/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/benchmarks/axum-bench/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/benchmarks/tosic-http-bench/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />
