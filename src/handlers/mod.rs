@@ -3,14 +3,12 @@
 mod not_found;
 pub(crate) mod wrapper;
 
-use crate::body::BoxBody;
 use crate::error::Error;
 use crate::handlers::not_found::not_found;
 use crate::handlers::wrapper::HandlerWrapper;
 use crate::route::{HandlerFn, Route, RouteNode};
 use crate::traits::from_request::FromRequest;
 use crate::traits::handler::Handler;
-use crate::traits::responder::Responder;
 use http::Method;
 use std::collections::{BTreeMap, HashMap};
 use std::future::Future;
@@ -28,13 +26,10 @@ impl Handlers {
     }
 
     /// Insert a handler for a route and method
-    pub fn insert<H, Args>(&mut self, method: Method, path: &str, handler: H)
+    pub fn insert<Args>(&mut self, method: Method, path: &str, handler: impl Handler<Args>)
     where
-        H: Handler<Args> + Send + Sync + 'static,
         Args: FromRequest + Send + 'static,
         Args::Future: Future + Send + 'static,
-        H::Future: Future + Send + 'static,
-        H::Output: Responder<Body = BoxBody> + 'static,
         Error: From<Args::Error>,
     {
         let entry = self.entry(method).or_default();

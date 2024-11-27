@@ -25,13 +25,10 @@ pub struct HandlerFn(Arc<HandlerInner>);
 
 impl HandlerFn {
     /// Create a new handler function from a handler
-    pub(crate) fn wrap<H, Args>(handler: H) -> HandlerFn
+    pub(crate) fn wrap<Args>(handler: impl Handler<Args>) -> HandlerFn
     where
-        H: Handler<Args> + Send + Sync + 'static,
         Args: FromRequest + Send + 'static,
         Args::Future: Future + Send + 'static,
-        H::Future: Future + Send + 'static,
-        H::Output: Responder<Body = BoxBody> + 'static,
         Error: From<Args::Error>,
     {
         Self(wrap_handler_fn(Arc::new(handler)))
@@ -82,13 +79,10 @@ unsafe impl Send for HttpPayload {}
 unsafe impl Send for BoxBody {}
 
 /// Wrap a handler function so that it can be used as a [`Service`].
-pub(crate) fn wrap_handler_fn<H, Args>(handler: Arc<H>) -> Arc<HandlerInner>
+pub(crate) fn wrap_handler_fn<Args>(handler: Arc<impl Handler<Args>>) -> Arc<HandlerInner>
 where
-    H: Handler<Args> + Send + Sync + 'static,
     Args: FromRequest + Send + 'static,
     Args::Future: Future + Send + 'static,
-    H::Future: Future + Send + 'static,
-    H::Output: Responder<Body = BoxBody> + 'static,
     Error: From<Args::Error>,
 {
     Arc::new(
@@ -203,13 +197,10 @@ impl RouteNode {
     }
 
     /// Inserts a handler into the route node.
-    pub fn insert<H, Args>(&mut self, route: &Route, handler: H)
+    pub fn insert<Args>(&mut self, route: &Route, handler: impl Handler<Args>)
     where
-        H: Handler<Args> + Send + Sync + 'static,
         Args: FromRequest + Send + 'static,
         Args::Future: Future + Send + 'static,
-        H::Future: Future + Send + 'static,
-        H::Output: Responder<Body = BoxBody> + 'static,
         Error: From<Args::Error>,
     {
         let handler_fn = HandlerFn::wrap(handler);

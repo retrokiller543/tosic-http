@@ -1,6 +1,7 @@
 //! Handler trait defines the signature of a handler function
 //! that can be used to implement a service handler
 
+use crate::prelude::{BoxBody, Responder};
 use std::future::Future;
 
 #[diagnostic::on_unimplemented(
@@ -12,11 +13,11 @@ use std::future::Future;
 ///
 /// The Handler trait defines the signature of a handler function
 /// that can be used to implement a service handler
-pub trait Handler<Args>: 'static {
+pub trait Handler<Args>: Send + Sync + 'static {
     /// The output type of the handler
-    type Output;
+    type Output: Responder<Body = BoxBody>;
     /// The future type of the handler
-    type Future: Future<Output = Self::Output>;
+    type Future: Future<Output = Self::Output> + Send;
 
     /// Calls the handler function with the given arguments
     fn call(&self, args: Args) -> Self::Future;
@@ -25,8 +26,9 @@ pub trait Handler<Args>: 'static {
 macro_rules! handler_tuple ({ $($param:ident)* } => {
     impl<Func, Fut, $($param,)*> Handler<($($param,)*)> for Func
     where
-        Func: Fn($($param),*) -> Fut + 'static,
-        Fut: Future,
+        Func: Fn($($param),*) -> Fut + Send + Sync + 'static,
+        Fut: Future + Send,
+        Fut::Output: Responder<Body = BoxBody>
     {
         type Output = Fut::Output;
         type Future = Fut;
