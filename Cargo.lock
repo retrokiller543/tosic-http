@@ -2930,33 +2930,6 @@ dependencies = [
 
 [[package]]
 name = "tosic-http"
-version = "0.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cbc0ddcb5bd1f8a808a70b8feac494f2cfa7ee5a3f921e29df5df329cc6aaa28"
-dependencies = [
- "bytes",
- "clap",
- "flate2",
- "futures",
- "http 1.1.0",
- "httparse",
- "itertools",
- "mime",
- "pin-project-lite",
- "serde",
- "serde_json",
- "serde_urlencoded",
- "thiserror 2.0.3",
- "tokio",
- "tokio-util",
- "tosic-http-macro 0.0.2",
- "tower 0.5.1",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "tosic-http"
 version = "0.0.3"
 dependencies = [
  "bytes",
@@ -2983,6 +2956,34 @@ dependencies = [
 ]
 
 [[package]]
+name = "tosic-http"
+version = "0.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "31840d94ce0fdf9b8b4b6befe2fdaaccfd6dca54145a71390654d53414a78949"
+dependencies = [
+ "bytes",
+ "clap",
+ "flate2",
+ "futures",
+ "http 1.1.0",
+ "httparse",
+ "itertools",
+ "mime",
+ "paste",
+ "pin-project-lite",
+ "serde",
+ "serde_json",
+ "serde_urlencoded",
+ "thiserror 2.0.3",
+ "tokio",
+ "tokio-util",
+ "tosic-http-macro 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "tower 0.5.1",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "tosic-http-bench"
 version = "0.1.0"
 dependencies = [
@@ -2990,14 +2991,12 @@ dependencies = [
  "serde_json",
  "sqlx",
  "tokio",
- "tosic-http 0.0.2",
+ "tosic-http 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "tosic-http-macro"
-version = "0.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3a9866b34d9cbd39f92e123de221428a17577a1c7d706991947f17b81a8d8869"
+version = "0.0.3"
 dependencies = [
  "darling",
  "proc-macro2",
@@ -3008,6 +3007,8 @@ dependencies = [
 [[package]]
 name = "tosic-http-macro"
 version = "0.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d806ce2f69cf635134211d7c797c97fc657b7cab979462b61a59df2fc25fd6c3"
 dependencies = [
  "darling",
  "proc-macro2",
