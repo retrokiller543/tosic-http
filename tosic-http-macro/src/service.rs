@@ -8,17 +8,14 @@ pub(crate) fn service(
     input: TokenStream,
     method: &str,
 ) -> proc_macro::TokenStream {
-    // Parse the input TokenStream into a syn::ItemFn
     let input = parse_macro_input!(input as ItemFn);
 
-    // Check if the input function is async
     if input.sig.asyncness.is_none() {
         return syn::Error::new_spanned(input.sig.fn_token, "async fn is required")
             .to_compile_error()
             .into();
     }
 
-    // Generate identifiers
     let crate_name = Ident::new("tosic_http", proc_macro2::Span::call_site());
     let fn_name = input.sig.ident.clone();
     let method_ident = Ident::new(
@@ -26,7 +23,6 @@ pub(crate) fn service(
         proc_macro2::Span::call_site(),
     );
 
-    // Generate parameter destructuring for `call` function
     let mut idents = Vec::new();
     let mut types = Vec::new();
     let fn_inputs = &input.sig.inputs;
@@ -49,12 +45,11 @@ pub(crate) fn service(
         .attrs
         .iter()
         .filter(|attr| attr.path().is_ident("doc"))
-        .cloned() // Clone since we will use the attribute in a new place
+        .cloned()
         .collect();
 
     let vis = &input.vis;
 
-    // Expand the macro to generate the desired output code
     let expanded: TokenStream2 = quote! {
         #[allow(non_camel_case_types)]
         #(#doc_attrs)*

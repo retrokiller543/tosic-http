@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-tosic-http = "0.0.2"
+tosic-http = "0.0.3"
 sqlx = { version = "0.8.2", features = ["sqlite", "runtime-tokio-native-tls"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 serde = { version = "1.0", features = ["derive"] }
