@@ -36,6 +36,13 @@ where
     service_builder: ServiceBuilder<L>,
 }
 
+impl HttpServer<Identity> {
+    /// Returns a new [`HttpServerBuilder`] for configuring and building an [`HttpServer`].
+    pub fn builder<T: ToSocketAddrs + Default + Debug + Clone>() -> HttpServerBuilder<T, Identity> {
+        HttpServerBuilder::<T, Identity>::new()
+    }
+}
+
 impl<L> HttpServer<L>
 where
     L: Layer<HandlerFn> + Clone + Send + 'static,
@@ -51,8 +58,8 @@ where
     /// Create a new [`HttpServer`] instance and binds the server to the provided address.
     ///
     /// This meant to be called from [`HttpServerBuilder`] and not externally
-    pub(crate) async fn new<T: ToSocketAddrs + Debug>(
-        addr: T,
+    pub(crate) async fn new(
+        addr: impl ToSocketAddrs + Debug,
         handlers: Handlers,
         app_state: State,
         service_builder: ServiceBuilder<L>,
@@ -68,11 +75,6 @@ where
             app_state,
             service_builder,
         })
-    }
-
-    /// Returns a new [`HttpServerBuilder`] for configuring and building an [`HttpServer`].
-    pub fn builder<T: ToSocketAddrs + Default + Debug + Clone>() -> HttpServerBuilder<T, Identity> {
-        HttpServerBuilder::<T, Identity>::new()
     }
 
     /// Starts the server and listens for incoming connections.

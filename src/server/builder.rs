@@ -1,7 +1,6 @@
 //! The [`HttpServerBuilder`] is a builder for configuring and initializing an [`HttpServer`].
 //! It allows for setting up the server address, adding services, and configuring shared state.
 
-use crate::body::BoxBody;
 use crate::error::Error;
 use crate::handlers::Handlers;
 use crate::server::HttpServer;
@@ -9,7 +8,6 @@ use crate::services::HttpService;
 use crate::state::State;
 use crate::traits::from_request::FromRequest;
 use crate::traits::handler::Handler;
-use crate::traits::responder::Responder;
 use http::Method;
 use std::fmt::Debug;
 use std::future::Future;
@@ -117,13 +115,15 @@ where
     ///     .service_method(Method::GET, "/", basic_handler)
     ///     .bind("127.0.0.1:8080");
     /// ```
-    pub fn service_method<H, Args>(mut self, method: Method, path: &str, handler: H) -> Self
+    pub fn service_method<Args>(
+        mut self,
+        method: Method,
+        path: &str,
+        handler: impl Handler<Args>,
+    ) -> Self
     where
-        H: Handler<Args> + Send + Sync + 'static,
         Args: FromRequest + Send + 'static,
         Args::Future: Future + Send + 'static,
-        H::Future: Future + Send + 'static,
-        H::Output: Responder<Body = BoxBody> + 'static,
         Error: From<Args::Error>,
     {
         self.handlers.insert(method, path, handler);
@@ -153,16 +153,14 @@ where
     ///     .service(basic_handler)
     ///     .bind("127.0.0.1:8080");
     /// ```
-    pub fn service<H, Args>(mut self, handler: H) -> Self
+    pub fn service<Args>(mut self, handler: impl HttpService<Args>) -> Self
     where
-        H: HttpService<Args> + Handler<Args> + Send + Sync + 'static,
         Args: FromRequest + Send + 'static,
         Args::Future: Future + Send + 'static,
-        H::Future: Future + Send + 'static,
-        H::Output: Responder<Body = BoxBody> + 'static,
         Error: From<Args::Error>,
     {
-        self.handlers.insert(H::METHOD, H::PATH, handler);
+        self.handlers
+            .insert(handler.method(), handler.path(), handler);
         self
     }
 
